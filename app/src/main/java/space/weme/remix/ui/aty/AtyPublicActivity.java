@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.util.ArrayMap;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -15,17 +14,19 @@ import com.facebook.drawee.view.SimpleDraweeView;
 import com.facebook.imagepipeline.common.ResizeOptions;
 import com.facebook.imagepipeline.request.ImageRequestBuilder;
 
-import org.json.JSONObject;
-
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Map;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import me.nereo.multi_image_selector.MultiImageSelectorActivity;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import space.weme.remix.R;
+import space.weme.remix.service.ActivityService;
+import space.weme.remix.service.Services;
 import space.weme.remix.ui.base.SwipeActivity;
 import space.weme.remix.util.LogUtils;
-import space.weme.remix.util.OkHttpUtils;
 import space.weme.remix.util.StrUtils;
 import space.weme.remix.widgt.WDialog;
 import space.weme.remix.widgt.WSwitch;
@@ -35,25 +36,45 @@ public class AtyPublicActivity extends SwipeActivity {
     private static final String TAG = "AtyPublicActivity";
     private static final int REQUEST_IMAGE = 2;
 
-    private SimpleDraweeView actAdd;
-    private TextView txtPublic;
-    private ArrayList<String> path;
+    @BindView(R.id.img_act_add)
+    SimpleDraweeView actAdd;
 
-    private EditText editTitle;
-    private EditText editTime;
-    private EditText editLocation;
-    private EditText editNumber;
-    private EditText editAdvertise;
-    private EditText editDetail;
-    private EditText editLabe;
-    private WSwitch wSwitch;
+    @BindView(R.id.txt_activity_public)
+    TextView txtPublic;
+
+    @BindView(R.id.edit_title)
+    EditText editTitle;
+
+    @BindView(R.id.edit_time)
+    EditText editTime;
+
+    @BindView(R.id.edit_location)
+    EditText editLocation;
+
+    @BindView(R.id.edit_number)
+    EditText editNumber;
+
+    @BindView(R.id.edit_advertise)
+    EditText editAdvertise;
+
+    @BindView(R.id.edit_detail)
+    EditText editDetail;
+
+    @BindView(R.id.edit_labe)
+    EditText editLabe;
+
+    @BindView(R.id.tog_btn)
+    WSwitch wSwitch;
+
+    private ArrayList<String> path;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_public_activity);
 
-        initView();
+        ButterKnife.bind(this);
+        wSwitch.setOn(false);
 
         actAdd.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -73,50 +94,31 @@ public class AtyPublicActivity extends SwipeActivity {
         txtPublic.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(path!=null&&!path.isEmpty()
-                        &&getEditText()!=null){
+                if (path != null && !path.isEmpty()) {
                     new WDialog.Builder(AtyPublicActivity.this).setMessage("确定发布活动吗？")
                             .setPositive("发布", new View.OnClickListener() {
                                 @Override
                                 public void onClick(View v) {
-                                    publicActivity(getEditText());
+                                    publicActivity();
                                 }
                             }).show();
-                }else{
+                } else {
                     new WDialog.Builder(AtyPublicActivity.this).setMessage("请填写必填信息").show();
                 }
 
             }
         });
-
-
-
-
     }
 
-    void initView(){
-        txtPublic= (TextView) findViewById(R.id.txt_activity_public);
-        actAdd= (SimpleDraweeView) findViewById(R.id.img_act_add);
-        editAdvertise= (EditText) findViewById(R.id.edit_advertise);
-        editDetail= (EditText) findViewById(R.id.edit_detail);
-        editLocation= (EditText) findViewById(R.id.edit_location);
-        editLabe= (EditText) findViewById(R.id.edit_labe);
-        editTitle= (EditText) findViewById(R.id.edit_title);
-        editTime= (EditText) findViewById(R.id.edit_time);
-        editLabe= (EditText) findViewById(R.id.edit_labe);
-        editNumber= (EditText) findViewById(R.id.edit_number);
-        wSwitch= (WSwitch) findViewById(R.id.tog_btn);
-        wSwitch.setOn(false);
-    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_IMAGE&&resultCode == Activity.RESULT_OK){
-            path=data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
-            Uri uri=Uri.fromFile(new File(path.get(0)));
+        if (requestCode == REQUEST_IMAGE && resultCode == Activity.RESULT_OK) {
+            path = data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
+            Uri uri = Uri.fromFile(new File(path.get(0)));
 
-           // Uri uri = "file:///mnt/sdcard/MyApp/myfile.jpg";
+            // Uri uri = "file:///mnt/sdcard/MyApp/myfile.jpg";
             //解决图片大于4M不显示问题(由于openGL最大支持4M，有局限只能缩小图片了)
             LogUtils.e(TAG, actAdd.getLayoutParams().width + " " + actAdd.getLayoutParams().height);
             ImageRequestBuilder imageRequestBuilder = ImageRequestBuilder.newBuilderWithSource(uri)
@@ -134,43 +136,42 @@ public class AtyPublicActivity extends SwipeActivity {
         }
     }
 
-    Map<String,String> getEditText(){
-        Map<String,String> map=new ArrayMap<>();
-        map.put("token", StrUtils.token());
-        map.put("title",editTitle.getText().toString());
-        map.put("location",editLocation.getText().toString());
-        map.put("number",editNumber.getText().toString());
-        map.put("time",editTime.getText().toString());
-        map.put("advertise",editAdvertise.getText().toString());
 
-        map.put("whetherimage",wSwitch.isOn()?"true":"false");
-        map.put("detail",editDetail.getText().toString());
-        map.put("labe",editLabe.getText().toString());
-        return map;
-    }
+    void publicActivity() {
+        ActivityService.PublishActivity pa = new ActivityService.PublishActivity(
+                StrUtils.token(),
+                editTitle.getText().toString(),
+                editLocation.getText().toString(),
+                editNumber.getText().toString(),
+                editTime.getText().toString(),
+                editAdvertise.getText().toString(),
+                wSwitch.isOn() ? "true" : "false",
+                editDetail.getText().toString(),
+                editLabe.getText().toString()
+        );
+        Services.activityService()
+                .publishActivity(pa)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    if (resp == null) {
+                        new WDialog.Builder(AtyPublicActivity.this)
+                                .setTitle("提示")
+                                .setMessage("活动发布失败")
+                                .setPositive("确认", new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        onBackPressed();
+                                    }
+                                }).show();
+                    } else {
+                        new WDialog.Builder(AtyPublicActivity.this)
+                                .setTitle("提示")
+                                .setMessage("已发布活动").show();
+                    }
+                }, ex -> {
 
-    void publicActivity(Map<String,String> map){
-        OkHttpUtils.post(StrUtils.PUBLISH_ACTIVITY, map, TAG, new OkHttpUtils.SimpleOkCallBack() {
-            @Override
-            public void onResponse(String s) {
-                JSONObject j = OkHttpUtils.parseJSON(AtyPublicActivity.this, s);
-                if(j == null)  {
-                    new WDialog.Builder(AtyPublicActivity.this)
-                            .setTitle("提示")
-                            .setMessage("活动发布失败")
-                            .setPositive("确认", new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    onBackPressed();
-                                }
-                            }).show();
-                } else {
-                    new WDialog.Builder(AtyPublicActivity.this)
-                            .setTitle("提示")
-                            .setMessage("已发布活动").show();
-                }
-            }
-        });
+                });
     }
 
     @Override

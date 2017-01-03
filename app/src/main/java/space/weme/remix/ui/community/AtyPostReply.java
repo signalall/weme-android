@@ -7,7 +7,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.util.ArrayMap;
 import android.util.Log;
-import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -19,6 +18,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import me.nereo.multi_image_selector.MultiImageSelectorActivity;
 import okhttp3.MediaType;
 import rx.android.schedulers.AndroidSchedulers;
@@ -42,13 +44,20 @@ public class AtyPostReply extends AtyImage {
     public static final String INTENT_CONTENT = "intent_content";
     protected static final MediaType MEDIA_TYPE_JPG = MediaType.parse("image/*");
 
-
-    private String mPostID;
+    @BindView(R.id.send)
     TextView mSend;
+
+    @BindView(R.id.main_editor)
     EditText mEditor;
     ProgressDialog mProgressDialog;
+
+    @BindView(R.id.add_image)
     SimpleDraweeView mDrawAddImage;
+
+    @BindView(R.id.select_image_view)
     GridLayout mImageGrids;
+
+    private String mPostID;
 
     private AtomicInteger mSendImageResponseNum;
 
@@ -56,18 +65,14 @@ public class AtyPostReply extends AtyImage {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_post_aty_reply);
+        ButterKnife.bind(this);
         mPostID = getIntent().getStringExtra(INTENT_ID);
         String content = getIntent().getStringExtra(INTENT_CONTENT);
 
-        mDrawAddImage = (SimpleDraweeView) findViewById(R.id.add_image);
         mDrawAddImage.setImageURI(Uri.parse("res:/" + R.mipmap.add_image));
         mDrawAddImage.setOnClickListener(mListener);
-        mSend = (TextView) findViewById(R.id.send);
-        mEditor = (EditText) findViewById(R.id.main_editor);
         mEditor.setText(content);
-        mImageGrids = (GridLayout) findViewById(R.id.select_image_view);
 
-        mSend.setOnClickListener(new ReplyListener());
         mChosenPicturePathList = new ArrayList<>();
         mSendImageResponseNum = new AtomicInteger();
     }
@@ -92,64 +97,60 @@ public class AtyPostReply extends AtyImage {
         }
     }
 
-
     @Override
     protected String tag() {
         return TAG;
     }
 
-    private class ReplyListener implements View.OnClickListener {
 
-        @Override
-        public void onClick(View v) {
-            if (mEditor.getText().length() == 0) {
-                return;
-            }
-            mProgressDialog = ProgressDialog.show(AtyPostReply.this, null, getResources().getString(R.string.commenting));
-
-            Services.postService()
-                    .commentToPost(new PostService.CommentToPost(StrUtils.token(), mPostID, mEditor.getText().toString()))
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(resp -> {
-                        Log.d(TAG, resp.toString());
-                        if (!resp.containsKey("id")) {
-                            mProgressDialog.dismiss();
-                            Toast.makeText(AtyPostReply.this, R.string.comment_failed, Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        String commendId = resp.get("id");
-                        if (mChosenPicturePathList.size() == 0) {
-                            setResult(RESULT_OK);
-                            finish();
-                            return;
-                        }
-                        ArrayMap<String, String> p = new ArrayMap<>();
-                        p.put("token", StrUtils.token());
-                        p.put("type", "-7");
-                        p.put("commentid", commendId);
-                        mSendImageResponseNum.set(0);
-                        for (int number = 0; number < mChosenPicturePathList.size(); number++) {
-                            p.put("number", String.format("%d", number));
-                            String path = mChosenPicturePathList.get(number);
-
-                            OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, p, path, MEDIA_TYPE_JPG, TAG, new OkHttpUtils.SimpleOkCallBack() {
-                                @Override
-                                public void onFailure(IOException e) {
-                                    uploadImageReturned();
-                                }
-
-                                @Override
-                                public void onResponse(String s) {
-                                    uploadImageReturned();
-                                }
-                            });
-                        }
-                    }, ex -> {
+    @OnClick(R.id.send)
+    public void onSendClick() {
+        if (mEditor.getText().length() == 0) {
+            return;
+        }
+        mProgressDialog = ProgressDialog.show(AtyPostReply.this, null, getResources().getString(R.string.commenting));
+        Services.postService()
+                .commentToPost(new PostService.CommentToPost(StrUtils.token(), mPostID, mEditor.getText().toString()))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, resp.toString());
+                    if (!resp.containsKey("id")) {
                         mProgressDialog.dismiss();
                         Toast.makeText(AtyPostReply.this, R.string.comment_failed, Toast.LENGTH_SHORT).show();
-                    });
-        }
+                        return;
+                    }
+                    String commendId = resp.get("id");
+                    if (mChosenPicturePathList.size() == 0) {
+                        setResult(RESULT_OK);
+                        finish();
+                        return;
+                    }
+                    ArrayMap<String, String> p = new ArrayMap<>();
+                    p.put("token", StrUtils.token());
+                    p.put("type", "-7");
+                    p.put("commentid", commendId);
+                    mSendImageResponseNum.set(0);
+                    for (int number = 0; number < mChosenPicturePathList.size(); number++) {
+                        p.put("number", String.format("%d", number));
+                        String path = mChosenPicturePathList.get(number);
+
+                        OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, p, path, MEDIA_TYPE_JPG, TAG, new OkHttpUtils.SimpleOkCallBack() {
+                            @Override
+                            public void onFailure(IOException e) {
+                                uploadImageReturned();
+                            }
+
+                            @Override
+                            public void onResponse(String s) {
+                                uploadImageReturned();
+                            }
+                        });
+                    }
+                }, ex -> {
+                    mProgressDialog.dismiss();
+                    Toast.makeText(AtyPostReply.this, R.string.comment_failed, Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void uploadImageReturned() {

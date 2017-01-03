@@ -158,7 +158,7 @@ public class FgtCommunity extends BaseFragment {
             tvNote.setText(postTopic.note);
             String text = postTopic.number + "";
             tvNumber.setText(text);
-            ivImage.setImageURI(Uri.parse(postTopic.imageurl));
+            ivImage.setImageURI(Uri.parse(postTopic.imageUrl));
             GridLayout.LayoutParams params = new GridLayout.LayoutParams(GridLayout.spec(i / 3), GridLayout.spec(i % 3));
             params.width = (grid.getWidth() / grid.getColumnCount()) - params.rightMargin - params.leftMargin;
             RelativeLayout.LayoutParams ivParams = (RelativeLayout.LayoutParams) ivImage.getLayoutParams();

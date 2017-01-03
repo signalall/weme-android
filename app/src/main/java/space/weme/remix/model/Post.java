@@ -32,11 +32,17 @@ public class Post {
     private String title;
 
     @SerializedName("body")
-    private String body;
+    private String content;
 
+    /**
+     * 喜爱数
+     */
     @SerializedName("likenumber")
     public String likeNumber;
 
+    /**
+     * 评论数
+     */
     @SerializedName("commentnumber")
     public String commentNumber;
 
@@ -46,6 +52,9 @@ public class Post {
     @SerializedName("thumbnail")
     public List<String> thumbnailUrl;
 
+    /**
+     * 喜爱的用户
+     */
     @SerializedName("likeusers")
     public List<Integer> likeUserIds;
 
@@ -108,12 +117,12 @@ public class Post {
         this.title = title;
     }
 
-    public String getBody() {
-        return body;
+    public String getContent() {
+        return content;
     }
 
-    public void setBody(String body) {
-        this.body = body;
+    public void setContent(String content) {
+        this.content = content;
     }
 
     public String getLikeNumber() {
@@ -162,5 +171,26 @@ public class Post {
 
     public void setFlag(String flag) {
         this.flag = flag;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Post{");
+        sb.append("postId='").append(postId).append('\'');
+        sb.append(", userId='").append(userId).append('\'');
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", school='").append(school).append('\'');
+        sb.append(", gender='").append(gender).append('\'');
+        sb.append(", timestamp='").append(timestamp).append('\'');
+        sb.append(", title='").append(title).append('\'');
+        sb.append(", content='").append(content).append('\'');
+        sb.append(", likeNumber='").append(likeNumber).append('\'');
+        sb.append(", commentNumber='").append(commentNumber).append('\'');
+        sb.append(", imageUrl=").append(imageUrl);
+        sb.append(", thumbnailUrl=").append(thumbnailUrl);
+        sb.append(", likeUserIds=").append(likeUserIds);
+        sb.append(", flag='").append(flag).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 }

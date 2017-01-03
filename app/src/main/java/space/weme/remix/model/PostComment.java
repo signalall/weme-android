@@ -11,7 +11,7 @@ import java.util.List;
 public class PostComment {
 
     @SerializedName("body")
-    private String body;
+    private String content;
 
     @SerializedName("flag")
     private String flag; // whether you liked this reply
@@ -49,12 +49,12 @@ public class PostComment {
     @SerializedName("userid")
     private String userId;
 
-    public String getBody() {
-        return body;
+    public String getContent() {
+        return content;
     }
 
-    public void setBody(String body) {
-        this.body = body;
+    public void setContent(String content) {
+        this.content = content;
     }
 
     public int getCommentCount() {
@@ -151,5 +151,26 @@ public class PostComment {
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("PostComment{");
+        sb.append("content='").append(content).append('\'');
+        sb.append(", flag='").append(flag).append('\'');
+        sb.append(", gender='").append(gender).append('\'');
+        sb.append(", id='").append(id).append('\'');
+        sb.append(", image=").append(image);
+        sb.append(", commentCount=").append(commentCount);
+        sb.append(", likeCount=").append(likeCount);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", comments=").append(comments);
+        sb.append(", school='").append(school).append('\'');
+        sb.append(", thumbnail=").append(thumbnail);
+        sb.append(", timestamp='").append(timestamp).append('\'');
+        sb.append(", userId='").append(userId).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 }

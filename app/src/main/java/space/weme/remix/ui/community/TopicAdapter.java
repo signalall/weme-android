@@ -19,6 +19,8 @@ import org.json.JSONObject;
 
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import space.weme.remix.R;
 import space.weme.remix.model.Post;
 import space.weme.remix.model.PostTopic;
@@ -109,7 +111,7 @@ public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             item.university.setText(post.getSchool());
             item.time.setText(StrUtils.timeTransfer(post.getTimestamp()));
             item.title.setText(post.getTitle());
-            item.content.setText(post.getBody());
+            item.content.setText(post.getContent());
             item.like_number.setText(post.likeNumber);
             item.comment_number.setText(post.commentNumber);
             item.grid.removeAllViews();
@@ -152,42 +154,50 @@ public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         return mPostList == null ? 0 : mPostList.size();
     }
 
+    static class ItemViewHolder extends RecyclerView.ViewHolder {
 
-    private static class ItemViewHolder extends RecyclerView.ViewHolder {
+        @BindView(R.id.aty_topic_item_avatar)
         SimpleDraweeView avatar;
+
+        @BindView(R.id.aty_topic_item_name)
         TextView userName;
+
+        @BindView(R.id.aty_topic_item_university)
         TextView university;
+
+        @BindView(R.id.aty_topic_item_time)
         TextView time;
+
+        @BindView(R.id.aty_topic_item_title)
         TextView title;
+
+        @BindView(R.id.aty_topic_item_content)
         TextView content;
+
+        @BindView(R.id.aty_topic_item_like_number)
         TextView like_number;
+
+        @BindView(R.id.aty_topic_item_comment_number)
         TextView comment_number;
+
+        @BindView(R.id.aty_topic_item_grid)
         GridLayout grid;
 
         public ItemViewHolder(View itemView) {
             super(itemView);
             itemView.setId(itemID);
-            avatar = (SimpleDraweeView) itemView.findViewById(R.id.aty_topic_item_avatar);
-            userName = (TextView) itemView.findViewById(R.id.aty_topic_item_name);
-            university = (TextView) itemView.findViewById(R.id.aty_topic_item_university);
-            time = (TextView) itemView.findViewById(R.id.aty_topic_item_time);
-            title = (TextView) itemView.findViewById(R.id.aty_topic_item_title);
-            content = (TextView) itemView.findViewById(R.id.aty_topic_item_content);
-            like_number = (TextView) itemView.findViewById(R.id.aty_topic_item_like_number);
-            comment_number = (TextView) itemView.findViewById(R.id.aty_topic_item_comment_number);
-            grid = (GridLayout) itemView.findViewById(R.id.aty_topic_item_grid);
+            ButterKnife.bind(this, itemView);
             grid.setNumInRow(4);
         }
     }
 
-    private static class ProgressViewHolder extends RecyclerView.ViewHolder {
+    static class ProgressViewHolder extends RecyclerView.ViewHolder {
+        @BindView(R.id.progress)
         public ProgressBar progressBar;
 
         public ProgressViewHolder(View v) {
             super(v);
-            progressBar = (ProgressBar) v.findViewById(R.id.progress);
+            ButterKnife.bind(this, v);
         }
     }
-
-
 }

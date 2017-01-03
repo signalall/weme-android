@@ -5,12 +5,10 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CoordinatorLayout;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.View;
 import android.widget.TextView;
 
 import com.facebook.drawee.view.SimpleDraweeView;
@@ -18,6 +16,9 @@ import com.facebook.drawee.view.SimpleDraweeView;
 import java.util.ArrayList;
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import me.imid.swipebacklayout.lib.SwipeBackLayout;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -50,15 +51,34 @@ public class AtyTopic extends SwipeActivity {
     private boolean canLoadMore = true;
 
     private TopicAdapter mAdapter;
-    private SwipeRefreshLayout mSwipeRefreshLayout;
-    private SimpleDraweeView mImage;
-    private TextView mTvSlogan;
-    private TextView mTvTheme;
 
+    @BindView(R.id.swipe_refresh)
+    SwipeRefreshLayout mSwipeRefreshLayout;
+
+    @BindView(R.id.aty_topic_title_image)
+    SimpleDraweeView mImage;
+
+    @BindView(R.id.aty_topic_title_slogan)
+    TextView mTvSlogan;
+
+    @BindView(R.id.aty_topic_theme)
+    TextView mTvTheme;
+
+    @BindView(R.id.aty_topic_recycler_view)
+    RecyclerView mRecyclerView;
+
+    @OnClick(R.id.fab)
+    public void onFabClick() {
+        Intent i = new Intent(AtyTopic.this, AtyPostNew.class);
+        i.putExtra(AtyPostNew.INTENT_ID, mTopicId);
+        startActivityForResult(i, REQUEST_NEW_POST);
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_topic);
+        ButterKnife.bind(this);
+        mTopicId = getIntent().getStringExtra(TOPIC_ID);
 
         SwipeBackLayout mSwipeBackLayout = getSwipeBackLayout();
         mSwipeBackLayout.setEdgeSize(DimensionUtils.getDisplay().widthPixels / 2);
@@ -69,21 +89,6 @@ public class AtyTopic extends SwipeActivity {
         CoordinatorLayout.LayoutParams params = new CoordinatorLayout.LayoutParams(width, width / 2);
         mBarLayout.setLayoutParams(params);
 
-        mImage = (SimpleDraweeView) findViewById(R.id.aty_topic_title_image);
-        mTvSlogan = (TextView) findViewById(R.id.aty_topic_title_slogan);
-        mTvTheme = (TextView) findViewById(R.id.aty_topic_theme);
-
-        mTopicId = getIntent().getStringExtra(TOPIC_ID);
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent i = new Intent(AtyTopic.this, AtyPostNew.class);
-                i.putExtra(AtyPostNew.INTENT_ID, mTopicId);
-                startActivityForResult(i, REQUEST_NEW_POST);
-            }
-        });
-        RecyclerView mRecyclerView = (RecyclerView) findViewById(R.id.aty_topic_recycler_view);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(AtyTopic.this));
         mRecyclerView.setHasFixedSize(true);
         mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -106,7 +111,6 @@ public class AtyTopic extends SwipeActivity {
         mRecyclerView.setAdapter(mAdapter);
         mPostList = new ArrayList<>();
         mAdapter.setPostList(mPostList);
-        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh);
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
@@ -121,7 +125,6 @@ public class AtyTopic extends SwipeActivity {
     }
 
     private void loadAll() {
-        Log.d(TAG, "loadAll");
         Services.topicService()
                 .getTopicInfo(new TopicService.GetTopicInfo(StrUtils.token(), mTopicId))
                 .subscribeOn(Schedulers.io())
@@ -130,7 +133,7 @@ public class AtyTopic extends SwipeActivity {
                     Log.d(TAG, "getTopicInfo: " + resp.toString());
                     PostTopic postTopic = resp.getResult();
                     mPostTopic = postTopic;
-                    mImage.setImageURI(Uri.parse(mPostTopic.imageurl));
+                    mImage.setImageURI(Uri.parse(mPostTopic.imageUrl));
                     mTvSlogan.setText(mPostTopic.slogan);
                     mTvTheme.setText(mPostTopic.theme);
                     mAdapter.setTopic(mPostTopic);
@@ -167,7 +170,7 @@ public class AtyTopic extends SwipeActivity {
     }
 
     private void loadPage(int page, final boolean replace) {
-        // beforeLoadPage(replace);
+        beforeLoadPage(replace);
         Services.postService()
                 .getPostList(new PostService.GetPostList(StrUtils.token(), mTopicId, page + ""))
                 .subscribeOn(Schedulers.io())

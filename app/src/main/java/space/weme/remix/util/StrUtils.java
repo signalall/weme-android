@@ -47,23 +47,17 @@ public final class StrUtils {
 
     public static final String GET_TOP_ACTIVITY_URL = BASE_URL + "activitytopofficial";
 
-    public static final String GET_ACTIVITY_INFO_URL = BASE_URL + "getactivityinformation";
-
     public static final String TOP_BROAD_URL = BASE_URL + "topofficial";
 
     public static final String GET_PERSON_INFO = BASE_URL + "getprofile";
 
     public static final String GET_UNREAD_MESSAGE_URL = BASE_URL + "unreadmessagenum";
 
-
-
     public static final String GET_VISIT_INFO = BASE_URL + "visitinfo";
 
     public static final String VISIT_USER = BASE_URL + "visit";
 
     public static final String GET_PROFILE_BY_ID = BASE_URL + "getprofilebyid";
-
-
 
     public static final String GET_TIME_LINE_URL = BASE_URL + "getusertimeline";
 
@@ -85,12 +79,6 @@ public final class StrUtils {
 
     public static final String SEND_MESSAGE = BASE_URL + "sendmessage";
 
-    public static final String GET_PUBLISH_ACTIVITY = BASE_URL + "getpublishactivity";
-
-    public static final String GET_REGISTER_ACTIVITY = BASE_URL + "getattentactivity";
-
-    public static final String GET_LIKE_ACTIVITY = BASE_URL + "getlikeactivity";
-
     public static final String GET_RECOMMEND_USER = BASE_URL + "getrecommenduser";
 
     public static final String FOLLOW_USER = BASE_URL + "follow";
@@ -98,20 +86,6 @@ public final class StrUtils {
     public static final String UNFOLLOW_USER = BASE_URL + "unfollow";
 
     public static final String EDIT_CARD_SETTING = BASE_URL + "editprofile/editcardsetting";
-
-    public static final String GET_ACTIVITY_DETAIL_URL = BASE_URL + "getactivitydetail";
-
-    public static final String DEL_SIGN_ACTIVITY = BASE_URL + "deletesignup";
-
-    public static final String UNLIKE_ACTIVITY = BASE_URL + "unlikeactivity";
-
-    public static final String LIKE_ACTIVITY = BASE_URL + "likeactivity";
-
-    public static final String SIGN_ACTIVITY = BASE_URL + "signup";
-
-    public static final String PUBLISH_ACTIVITY = BASE_URL + "publishactivity";
-
-    public static final String SEARCH_ACTIVITY = BASE_URL + "searchactivity";
 
     public static final String CHECK_UPDATE_URL = BASE_URL + "checkapkversion";
 
@@ -130,7 +104,6 @@ public final class StrUtils {
     public static final String GET_TAGS_BY_ID = BASE_URL + "gettagsbyid";
 
     public static final String SET_TAGS = BASE_URL + "settags";
-
 
     public static final String GET_AVATAR = BASE_URL_NGINX + "avatar/";
 

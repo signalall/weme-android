@@ -94,4 +94,19 @@ public class Comment {
     public void setTimestamp(String timestamp) {
         this.timestamp = timestamp;
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Comment{");
+        sb.append("authorid='").append(authorid).append('\'');
+        sb.append(", content='").append(content).append('\'');
+        sb.append(", toCommentId='").append(toCommentId).append('\'');
+        sb.append(", toUsername='").append(toUsername).append('\'');
+        sb.append(", toUserId='").append(toUserId).append('\'');
+        sb.append(", fromUserId='").append(fromUserId).append('\'');
+        sb.append(", fromUsername='").append(fromUsername).append('\'');
+        sb.append(", timestamp='").append(timestamp).append('\'');
+        sb.append('}');
+        return sb.toString();
+    }
 }

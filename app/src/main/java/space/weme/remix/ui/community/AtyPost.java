@@ -18,6 +18,8 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import me.imid.swipebacklayout.lib.SwipeBackLayout;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -44,7 +46,6 @@ public class AtyPost extends SwipeActivity {
 
     private String mPostID;
 
-
     private boolean isLoading = false;
     private int curPage = 1;
     private boolean canLoadMore = true;
@@ -56,32 +57,34 @@ public class AtyPost extends SwipeActivity {
 
     ProgressDialog mProgressDialog;
 
-    private LinearLayout mChatView;
-    private EditText mEditText;
-    private TextView mCommentText;
-    private ImageView mAddImage;
+    @BindView(R.id.chat_view_holder)
+    LinearLayout mChatView;
 
-    private TextView tvDelete;
+    @BindView(R.id.activity_post_editor)
+    EditText mEditText;
 
+    @BindView(R.id.activity_post_commit)
+    TextView mCommentText;
+
+    @BindView(R.id.activity_post_add_image)
+    ImageView mAddImage;
+
+    @BindView(R.id.post_detail_delete)
+    TextView tvDelete;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.aty_post);
+        ButterKnife.bind(this);
+
         mPostID = getIntent().getStringExtra(POST_INTENT);
         String theme = getIntent().getStringExtra(THEME_INTENT);
-        setContentView(R.layout.aty_post);
         TextView toolbar = (TextView) findViewById(R.id.post_detail_toolbar);
         toolbar.setText(theme);
         SwipeBackLayout mSwipeBackLayout = getSwipeBackLayout();
         mSwipeBackLayout.setEdgeSize(DimensionUtils.getDisplay().widthPixels / 2);
         mSwipeBackLayout.setEdgeTrackingEnabled(SwipeBackLayout.EDGE_LEFT);
-
-        tvDelete = (TextView) findViewById(R.id.post_detail_delete);
-
-        mChatView = (LinearLayout) findViewById(R.id.chat_view_holder);
-        mEditText = (EditText) findViewById(R.id.activity_post_editor);
-        mCommentText = (TextView) findViewById(R.id.activity_post_commit);
-        mAddImage = (ImageView) findViewById(R.id.activity_post_add_image);
 
         RecyclerView mRecyclerView = (RecyclerView) findViewById(R.id.post_detail_recycler_view);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(AtyPost.this));
@@ -124,11 +127,12 @@ public class AtyPost extends SwipeActivity {
                 .getPostDetail(new PostService.GetPostDetail(StrUtils.token(), mPostID))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(post -> {
-                    if (post.getResult() == null) {
+                .subscribe(resp -> {
+                    Log.d(TAG, "getPostDetail: " + resp.toString());
+                    if (resp.getResult() == null) {
                         return;
                     }
-                    mPost = post.getResult();
+                    mPost = resp.getResult();
                     if (TextUtils.equals(mPost.getUserId(), StrUtils.id())) {
                         tvDelete.setVisibility(View.VISIBLE);
                         tvDelete.setOnClickListener(deleteListener);
@@ -138,6 +142,7 @@ public class AtyPost extends SwipeActivity {
                     mAdapter.setPost(mPost);
                     mAdapter.notifyDataSetChanged();
                 }, ex -> {
+                    Log.d(TAG, "getPostDetail: " + ex.getMessage());
                 });
         loadPage(1);
         mChatView.setVisibility(View.INVISIBLE);
@@ -172,7 +177,6 @@ public class AtyPost extends SwipeActivity {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(resp -> {
                     Log.d(TAG, "getPostComment: " + resp.toString());
-                    afterLoadPage(page);
                     List<PostComment> comments = resp.getResult();
                     if (comments == null || comments.isEmpty()) {
                         canLoadMore = false;
@@ -185,6 +189,7 @@ public class AtyPost extends SwipeActivity {
                     } else {
                         mAdapter.notifyItemRangeInserted(previousCount, comments.size());
                     }
+                    afterLoadPage(page);
                 }, ex -> {
                     Log.e(TAG, "getPostComment: " + ex.getMessage());
                     afterLoadPage(page);
@@ -195,7 +200,7 @@ public class AtyPost extends SwipeActivity {
         isLoading = true;
         if (page != 1) {
             mPostCommentList.add(null);
-            mAdapter.notifyItemInserted(mPostCommentList.size() + 1);
+            // mAdapter.notifyItemInserted(mPostCommentList.size() + 1);
         }
     }
 

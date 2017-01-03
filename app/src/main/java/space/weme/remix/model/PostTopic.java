@@ -15,7 +15,7 @@ public class PostTopic implements Parcelable {
     public String id;
 
     @SerializedName("imageurl")
-    public String imageurl;
+    public String imageUrl;
 
     @SerializedName("note")
     public String note;
@@ -37,12 +37,12 @@ public class PostTopic implements Parcelable {
         this.id = id;
     }
 
-    public String getImageurl() {
-        return imageurl;
+    public String getImageUrl() {
+        return imageUrl;
     }
 
-    public void setImageurl(String imageurl) {
-        this.imageurl = imageurl;
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public String getNote() {
@@ -85,7 +85,7 @@ public class PostTopic implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(this.id);
-        dest.writeString(this.imageurl);
+        dest.writeString(this.imageUrl);
         dest.writeString(this.note);
         dest.writeInt(this.number);
         dest.writeString(this.theme);
@@ -97,7 +97,7 @@ public class PostTopic implements Parcelable {
 
     protected PostTopic(Parcel in) {
         this.id = in.readString();
-        this.imageurl = in.readString();
+        this.imageUrl = in.readString();
         this.note = in.readString();
         this.number = in.readInt();
         this.theme = in.readString();
@@ -115,4 +115,17 @@ public class PostTopic implements Parcelable {
             return new PostTopic[size];
         }
     };
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("PostTopic{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", imageUrl='").append(imageUrl).append('\'');
+        sb.append(", note='").append(note).append('\'');
+        sb.append(", number=").append(number);
+        sb.append(", theme='").append(theme).append('\'');
+        sb.append(", slogan='").append(slogan).append('\'');
+        sb.append('}');
+        return sb.toString();
+    }
 }

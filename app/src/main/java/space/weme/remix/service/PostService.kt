@@ -2,13 +2,12 @@ package space.weme.remix.service
 
 import com.google.gson.annotations.SerializedName
 import retrofit2.http.Body
-import retrofit2.http.Field
-import retrofit2.http.FormUrlEncoded
 import retrofit2.http.POST
 import rx.Observable
 import space.weme.remix.Constants
 import space.weme.remix.model.Post
 import space.weme.remix.model.PostComment
+import space.weme.remix.model.ResponseWrapper
 
 interface PostService {
 

@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.util.ArrayMap;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -17,18 +16,19 @@ import android.widget.TextView;
 
 import com.facebook.drawee.view.SimpleDraweeView;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import java.util.ArrayList;
 import java.util.List;
 
+import rx.Observable;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import space.weme.remix.R;
 import space.weme.remix.model.Activity;
+import space.weme.remix.model.ResponseWrapper;
+import space.weme.remix.service.ActivityService;
+import space.weme.remix.service.Services;
 import space.weme.remix.ui.aty.AtyActivityDetail;
 import space.weme.remix.ui.base.BaseFragment;
-import space.weme.remix.util.LogUtils;
-import space.weme.remix.util.OkHttpUtils;
 import space.weme.remix.util.StrUtils;
 
 /**
@@ -47,19 +47,13 @@ public class FgtUserActivity extends BaseFragment {
     boolean canLoadMore = true;
     int curPage = 1;
 
-    String[] urls = new String[]{StrUtils.GET_PUBLISH_ACTIVITY,
-                                StrUtils.GET_LIKE_ACTIVITY,
-                                StrUtils.GET_REGISTER_ACTIVITY};
-
-    public static FgtUserActivity newInstance(int page){
+    public static FgtUserActivity newInstance(int page) {
         FgtUserActivity f = new FgtUserActivity();
         Bundle bundle = new Bundle();
-        bundle.putInt("page",page);
+        bundle.putInt("page", page);
         f.setArguments(bundle);
         return f;
     }
-
-
 
     @Nullable
     @Override
@@ -107,41 +101,55 @@ public class FgtUserActivity extends BaseFragment {
         return v;
     }
 
-    private void fetchActivities(final int page){
+    private void fetchActivities(final int page) {
         isRefreshing = true;
         isLoading = true;
-        ArrayMap<String, String> param = new ArrayMap<>();
-        param.put("token",StrUtils.token());
-        param.put("page", page + "");
-        OkHttpUtils.post(urls[pagerPage], param, TAG, new OkHttpUtils.SimpleOkCallBack(){
-            @Override
-            public void onResponse(String s) {
-                LogUtils.i(TAG,s);
-                isRefreshing = false;
-                isLoading = false;
-                JSONObject j = OkHttpUtils.parseJSON(getActivity(),s);
-                if(j == null){
-                    return;
-                }
-                JSONArray array = j.optJSONArray("result");
-                if(page == 1){
-                    activityList.clear();
-                }
-                int previousCount = activityList.size();
-                int length = array.length();
-                if(length == 0) {
-                    canLoadMore = false;
-                }
-                for(int i = 0; i<array.length(); i++){
-                    activityList.add(Activity.fromJSON(array.optJSONObject(i)));
-                }
-                if(page == 1) {
-                    adapter.notifyDataSetChanged();
-                }else{
-                    adapter.notifyItemRangeInserted(previousCount,length);
-                }
-            }
-        });
+
+        ActivityService.GetActivity req = new ActivityService.GetActivity(StrUtils.token(), String.valueOf(page));
+        Observable<ResponseWrapper<List<Activity>>> observable = null;
+        switch (pagerPage) {
+            case 0:
+                observable = Services.activityService()
+                        .getPublishActivity(req);
+                break;
+            case 1:
+                observable = Services.activityService()
+                        .getLikeActivity(req);
+                break;
+            case 2:
+                observable = Services.activityService()
+                        .getRegisterActivity(req);
+                break;
+        }
+        if (observable == null)
+            return;
+        observable
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "getActivity: " + resp.toString());
+                    List<Activity> activities = resp.getResult();
+                    isRefreshing = false;
+                    isLoading = false;
+                    if (activities == null) {
+                        return;
+                    }
+                    if (page == 1) {
+                        activityList.clear();
+                    }
+                    int previousCount = activityList.size();
+                    if (activities.isEmpty()) {
+                        canLoadMore = false;
+                    }
+                    activityList.addAll(activities);
+                    if (page == 1) {
+                        adapter.notifyDataSetChanged();
+                    } else {
+                        adapter.notifyItemRangeInserted(previousCount, activityList.size());
+                    }
+                }, ex -> {
+                    Log.e(TAG, "getActivity: " + ex.getMessage());
+                });
     }
 
 
@@ -150,13 +158,12 @@ public class FgtUserActivity extends BaseFragment {
         return TAG;
     }
 
-    private  class ActivityAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
+    private class ActivityAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         List<Activity> activities;
         Context mContext;
 
-
-        public ActivityAdapter(Context context){
+        public ActivityAdapter(Context context) {
             mContext = context;
         }
 
@@ -166,7 +173,7 @@ public class FgtUserActivity extends BaseFragment {
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(mContext).inflate(R.layout.fgt_user_activity_cell,parent,false);
+            View v = LayoutInflater.from(mContext).inflate(R.layout.fgt_user_activity_cell, parent, false);
             return new VH(v);
         }
 
@@ -174,28 +181,30 @@ public class FgtUserActivity extends BaseFragment {
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             VH item = (VH) holder;
             Activity activity = activities.get(position);
-            item.mTvTitle.setText(activity.title);
-            item.mAvatar.setImageURI(Uri.parse(StrUtils.thumForID(activity.authorID + "")));
-            String count = activity.signNumber+"/"+activity.capacity;
+            item.mTvTitle.setText(activity.getTitle());
+            item.mAvatar.setImageURI(Uri.parse(StrUtils.thumForID(activity.getAuthorID() + "")));
+            String count = activity.getSignNumber() + "/" + activity.getCapacity();
             item.mTvCount.setText(count);
-            item.mTvTime.setText(activity.time);
-            item.mTvLocation.setText(activity.location);
-            item.mTvStatus.setText(activity.status);
+            item.mTvTime.setText(activity.getTime());
+            item.mTvLocation.setText(activity.getLocation());
+            item.mTvStatus.setText(activity.getStatus());
             item.itemView.setTag(activity);
             item.itemView.setOnClickListener(listener);
         }
 
         @Override
         public int getItemCount() {
-            return activities==null?0:activities.size();
+            return activities == null ? 0 : activities.size();
         }
-         class VH extends RecyclerView.ViewHolder{
+
+        class VH extends RecyclerView.ViewHolder {
             SimpleDraweeView mAvatar;
             TextView mTvTitle;
             TextView mTvCount;
             TextView mTvTime;
             TextView mTvLocation;
             TextView mTvStatus;
+
             public VH(View itemView) {
                 super(itemView);
                 mAvatar = (SimpleDraweeView) itemView.findViewById(R.id.fgt_activity_item_image);
@@ -208,12 +217,12 @@ public class FgtUserActivity extends BaseFragment {
         }
     }
 
-    View.OnClickListener listener = new View.OnClickListener(){
+    View.OnClickListener listener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             Activity activity = (Activity) v.getTag();
             Intent i = new Intent(getActivity(), AtyActivityDetail.class);
-            i.putExtra(AtyActivityDetail.INTENT,activity.activityID);
+            i.putExtra(AtyActivityDetail.INTENT, activity.getId());
             getActivity().startActivity(i);
         }
     };

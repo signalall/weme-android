@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.util.ArrayMap;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -18,11 +19,17 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Map;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import me.imid.swipebacklayout.lib.SwipeBackLayout;
 import me.nereo.multi_image_selector.MultiImageSelectorActivity;
 import okhttp3.MediaType;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import space.weme.remix.R;
 import space.weme.remix.model.AtyDetail;
+import space.weme.remix.service.ActivityService;
+import space.weme.remix.service.Services;
 import space.weme.remix.ui.base.SwipeActivity;
 import space.weme.remix.util.DimensionUtils;
 import space.weme.remix.util.LogUtils;
@@ -30,8 +37,6 @@ import space.weme.remix.util.OkHttpUtils;
 import space.weme.remix.util.OkHttpUtils.SimpleOkCallBack;
 import space.weme.remix.util.StrUtils;
 import space.weme.remix.widgt.WDialog;
-
-import static space.weme.remix.R.id.txt_public_author;
 
 public class AtyActivityDetail extends SwipeActivity {
     private static final String TAG = "AtyDetail";
@@ -41,24 +46,48 @@ public class AtyActivityDetail extends SwipeActivity {
     private static final MediaType MEDIA_TYPE_PNG = MediaType.parse("image/png");
     private int activityid;
     private ArrayList<String> path;
-    private TextView txtTime;
-    private TextView txtLocation;
-    private TextView txtSchool;
-    private TextView txtAuthor;
-    private TextView txtDetail;
-    private TextView txtRemark;
-    private TextView txtSignNumber;
-    private Button btnSign;
-    private Button btnLove;
-    private SimpleDraweeView avatar;
-    private TextView tvSlogan;
 
-    private SimpleDraweeView atyAvatar;
+    @BindView(R.id.sign_time)
+    TextView txtTime;
+
+    @BindView(R.id.sign_location)
+    TextView txtLocation;
+
+    @BindView(R.id.txt_public_school)
+    TextView txtSchool;
+
+    @BindView(R.id.txt_public_author)
+    TextView txtAuthor;
+
+    @BindView(R.id.sign_detail)
+    TextView txtDetail;
+
+    @BindView(R.id.sign_remark)
+    TextView txtRemark;
+
+    @BindView(R.id.sign_number)
+    TextView txtSignNumber;
+
+    @BindView(R.id.btn_sign)
+    Button btnSign;
+
+    @BindView(R.id.btn_love)
+    Button btnLove;
+
+    @BindView(R.id.image)
+    SimpleDraweeView avatar;
+
+    @BindView(R.id.slogan)
+    TextView tvSlogan;
+
+    @BindView(R.id.sign_pic)
+    SimpleDraweeView atyAvatar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_detail);
+        ButterKnife.bind(this);
 
         SwipeBackLayout mSwipeBackLayout = getSwipeBackLayout();
         mSwipeBackLayout.setEdgeSize(DimensionUtils.getDisplay().widthPixels / 2);
@@ -72,96 +101,82 @@ public class AtyActivityDetail extends SwipeActivity {
         }
     }
 
+    @BindView(R.id.main_title)
+    TextView mainTitle;
+
     void initView() {
-        atyAvatar = (SimpleDraweeView) findViewById(R.id.sign_pic);
-        txtTime = (TextView) findViewById(R.id.sign_time);
-        txtLocation = (TextView) findViewById(R.id.sign_location);
-        txtSchool = (TextView) findViewById(R.id.txt_public_school);
-        txtAuthor = (TextView) findViewById(txt_public_author);
-        txtDetail = (TextView) findViewById(R.id.sign_detail);
-        txtRemark = (TextView) findViewById(R.id.sign_remark);
-        txtSignNumber = (TextView) findViewById(R.id.sign_number);
-        btnSign = (Button) findViewById(R.id.btn_sign);
-        btnLove = (Button) findViewById(R.id.btn_love);
         btnSign.setBackgroundResource(R.drawable.bg_login_btn_pressed);
         btnLove.setBackgroundResource(R.drawable.bg_login_btn_pressed);
-        avatar = (SimpleDraweeView) findViewById(R.id.image);
         ViewGroup.LayoutParams params = avatar.getLayoutParams();
         params.height = DimensionUtils.getDisplay().widthPixels / 2;
         avatar.setLayoutParams(params);
-        tvSlogan = (TextView) findViewById(R.id.slogan);
-        ((TextView) findViewById(R.id.main_title)).setText(R.string.activity_detail);
+        mainTitle.setText(R.string.activity_detail);
     }
 
     void initData() {
-        ArrayMap<String, String> param = new ArrayMap<>();
-        param.put("token", StrUtils.token());
-        param.put("activityid", String.valueOf(activityid));
-        OkHttpUtils.post(StrUtils.GET_ACTIVITY_DETAIL_URL, param, TAG, new SimpleOkCallBack() {
-            @Override
-            public void onResponse(String s) {
-                JSONObject j = OkHttpUtils.parseJSON(AtyActivityDetail.this, s);
-                if (j == null)
-                    return;
-                JSONObject result = j.optJSONObject("result");
-                final AtyDetail detail = AtyDetail.fromJSON(result);
-                RoundingParams roundingParams = RoundingParams.fromCornersRadius(5f);
-                roundingParams.setRoundAsCircle(true);
-                ((TextView) findViewById(R.id.main_title)).setText(detail.title);
-                atyAvatar.getHierarchy().setRoundingParams(roundingParams);
-                atyAvatar.setImageURI(Uri.parse(StrUtils.thumForID(detail.authorid + "")));
-                txtTime.setText(detail.time);
-                txtDetail.setText(detail.detail);
-                txtAuthor.setText(detail.author);
-                txtSignNumber.setText(detail.signnumber);
-                txtRemark.setText(detail.remark);
-                txtSchool.setText(detail.school);
-                txtLocation.setText(detail.location);
-                if (detail.state.equals("no")) {
-                    btnSign.setText("我要报名");
-                    btnSign.setBackgroundResource(R.drawable.bg_login_btn_pressed);
-                } else {
-                    btnSign.setText("已报名");
-                    btnSign.setBackgroundResource(R.drawable.bg_login_btn_common);
-                }
-                if (detail.likeflag.equals("0")) {
-                    btnLove.setText("关注一下");
-                    btnLove.setBackgroundResource(R.drawable.bg_login_btn_pressed);
-                } else {
-                    btnLove.setText("已关注");
-                    btnLove.setBackgroundResource(R.drawable.bg_login_btn_common);
-                }
-                btnSign.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (detail.state.equals("no")) {
-                            if (detail.whetherimage.equals("false"))
-                                showDialog("确定参加活动吗？", 1);
-                            else {
-                                showDialog("请上传您的生活照", 5);
+        Services.activityService()
+                .getActivityDetail(new ActivityService.GetActivityDetail(StrUtils.token(), String.valueOf(activityid)))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "getActivityDetail: " + resp.toString());
+                    AtyDetail detail = resp.getResult();
+                    if (detail == null) return;
+                    RoundingParams roundingParams = RoundingParams.fromCornersRadius(5f);
+                    roundingParams.setRoundAsCircle(true);
+                    ((TextView) findViewById(R.id.main_title)).setText(detail.getTitle());
+                    atyAvatar.getHierarchy().setRoundingParams(roundingParams);
+                    atyAvatar.setImageURI(Uri.parse(StrUtils.thumForID(detail.getAuthorid() + "")));
+                    txtTime.setText(detail.getTime());
+                    txtDetail.setText(detail.getDetail());
+                    txtAuthor.setText(detail.getAuthor());
+                    txtSignNumber.setText(detail.getSignnumber());
+                    txtRemark.setText(detail.getRemark());
+                    txtSchool.setText(detail.getSchool());
+                    txtLocation.setText(detail.getLocation());
+                    if ("no".equals(detail.getState())) {
+                        btnSign.setText("我要报名");
+                        btnSign.setBackgroundResource(R.drawable.bg_login_btn_pressed);
+                    } else {
+                        btnSign.setText("已报名");
+                        btnSign.setBackgroundResource(R.drawable.bg_login_btn_common);
+                    }
+                    if ("0".equals(detail.getLikeflag())) {
+                        btnLove.setText("关注一下");
+                        btnLove.setBackgroundResource(R.drawable.bg_login_btn_pressed);
+                    } else {
+                        btnLove.setText("已关注");
+                        btnLove.setBackgroundResource(R.drawable.bg_login_btn_common);
+                    }
+                    btnSign.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            if ("no".equals(detail.getState())) {
+                                if ("false".equals(detail.getWhetherimage()))
+                                    showDialog("确定参加活动吗？", 1);
+                                else {
+                                    showDialog("请上传您的生活照", 5);
+                                }
+                            } else {
+                                showDialog("是否取消参加该活动吗？", 2);
                             }
-                        } else {
-                            showDialog("是否取消参加该活动吗？", 2);
                         }
-                    }
-                });
-                btnLove.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (detail.likeflag.equals("0")) {
-                            showDialog("确定关注吗？", 3);
-                        } else {
-                            showDialog("是否取消关注？", 4);
+                    });
+                    btnLove.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            if ("0".equals(detail.getLikeflag())) {
+                                showDialog("确定关注吗？", 3);
+                            } else {
+                                showDialog("是否取消关注？", 4);
+                            }
                         }
-
-                    }
+                    });
+                    avatar.setImageURI(Uri.parse(detail.getImageurl()));
+                    tvSlogan.setText(detail.getAdvertise());
+                }, ex -> {
+                    Log.e(TAG, "getActivityDetail: " + ex.getMessage());
                 });
-                avatar.setImageURI(Uri.parse(detail.imageurl));
-                tvSlogan.setText(detail.advertise);
-
-            }
-        });
-
     }
 
     protected void showDialog(String msg, final int flag) {
@@ -171,16 +186,16 @@ public class AtyActivityDetail extends SwipeActivity {
                     public void onClick(View v) {
                         switch (flag) {
                             case 1:
-                                likeSignAty(StrUtils.SIGN_ACTIVITY);
+                                signActivity();
                                 break;
                             case 2:
-                                likeSignAty(StrUtils.DEL_SIGN_ACTIVITY);
+                                delSignActivity();
                                 break;
                             case 3:
-                                likeSignAty(StrUtils.LIKE_ACTIVITY);
+                                likeActivity();
                                 break;
                             case 4:
-                                likeSignAty(StrUtils.UNLIKE_ACTIVITY);
+                                unlikeActivity();
                                 break;
                             case 5:
                                 chooseImage();
@@ -190,47 +205,105 @@ public class AtyActivityDetail extends SwipeActivity {
                                 break;
                         }
                     }
+
+
                 }).show();
 
     }
 
+
     void singIn() {
-        String url = StrUtils.SIGN_ACTIVITY;
-        ArrayMap<String, String> map = new ArrayMap<>();
-        map.put("token", StrUtils.token());
-        map.put("activityid", String.valueOf(activityid));
-        //signup 路由有bug
-        map.put("activity", String.valueOf(activityid));
-        OkHttpUtils.post(url, map, TAG, new SimpleOkCallBack() {
-            @Override
-            public void onResponse(String s) {
-                JSONObject j = OkHttpUtils.parseJSON(AtyActivityDetail.this, s);
-                if (j != null) {
-                    initData();
-                    Toast.makeText(AtyActivityDetail.this, "报名成功", Toast.LENGTH_SHORT).show();
-                }
-            }
+        ActivityService.SignActivity sa = new ActivityService.SignActivity(
+                StrUtils.token(),
+                String.valueOf(activityid),
+                String.valueOf(activityid)
+        );
+        Services.activityService()
+                .signActivity(sa)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    if (resp != null) {
+                        initData();
+                        Toast.makeText(AtyActivityDetail.this, "报名成功", Toast.LENGTH_SHORT).show();
+                    }
+                }, ex -> {
 
-        });
+                });
     }
 
+    void likeActivity() {
+        ActivityService.LikeActivity sa = new ActivityService.LikeActivity(
+                StrUtils.token(),
+                String.valueOf(activityid),
+                String.valueOf(activityid)
+        );
+        Services.activityService()
+                .likeActivity(sa)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    if (resp != null)
+                        initData();
+                }, ex -> {
 
-    void likeSignAty(String url) {
-        ArrayMap<String, String> map = new ArrayMap<>();
-        map.put("token", StrUtils.token());
-        map.put("activityid", String.valueOf(activityid));
-        //signup 路由有bug
-        map.put("activity", String.valueOf(activityid));
-        OkHttpUtils.post(url, map, TAG, new SimpleOkCallBack() {
-            @Override
-            public void onResponse(String s) {
-                JSONObject j = OkHttpUtils.parseJSON(AtyActivityDetail.this, s);
-                if (j != null)
-                    initData();
-            }
-
-        });
+                });
     }
+
+    private void unlikeActivity() {
+        ActivityService.UnlikeActivity sa = new ActivityService.UnlikeActivity(
+                StrUtils.token(),
+                String.valueOf(activityid),
+                String.valueOf(activityid)
+        );
+        Services.activityService()
+                .unlikeActivity(sa)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    if (resp != null)
+                        initData();
+                }, ex -> {
+
+                });
+    }
+
+    private void delSignActivity() {
+        ActivityService.DelSignActivity sa = new ActivityService.DelSignActivity(
+                StrUtils.token(),
+                String.valueOf(activityid),
+                String.valueOf(activityid)
+        );
+        Services.activityService()
+                .delSignActivity(sa)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    if (resp != null)
+                        initData();
+                }, ex -> {
+
+                });
+    }
+
+    private void signActivity() {
+        ActivityService.SignActivity sa = new ActivityService.SignActivity(
+                StrUtils.token(),
+                String.valueOf(activityid),
+                String.valueOf(activityid)
+        );
+        Services.activityService()
+                .signActivity(sa)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    if (resp != null)
+                        initData();
+                }, ex -> {
+
+                });
+    }
+
 
     void chooseImage() {
         Intent intent = new Intent(AtyActivityDetail.this, MultiImageSelectorActivity.class);

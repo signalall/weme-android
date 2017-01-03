@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import me.nereo.multi_image_selector.MultiImageSelectorActivity;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -42,23 +44,29 @@ public class AtyPostNew extends AtyImage {
     private String mTopicID;
     private AtomicInteger mSendImageResponseNum;
 
-    private EditText mTitle;
-    private EditText mContent;
-    private SimpleDraweeView mDrawAddImage;
-    private GridLayout mImageGrids;
-    ProgressDialog mProgressDialog;
+    @BindView(R.id.aty_post_new_title)
+    EditText mTitle;
 
+    @BindView(R.id.aty_post_new_content)
+    EditText mContent;
+
+    @BindView(R.id.aty_post_new_add_image)
+    SimpleDraweeView mDrawAddImage;
+
+    @BindView(R.id.aty_post_new_images)
+    GridLayout mImageGrids;
+
+    @BindView(R.id.aty_post_new_send)
+    TextView mSend;
+
+    ProgressDialog mProgressDialog;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mTopicID = getIntent().getStringExtra(INTENT_ID);
         setContentView(R.layout.aty_post_new);
+        ButterKnife.bind(this);
+        mTopicID = getIntent().getStringExtra(INTENT_ID);
 
-        mImageGrids = (GridLayout) findViewById(R.id.aty_post_new_images);
-        TextView mSend = (TextView) findViewById(R.id.aty_post_new_send);
-        mTitle = (EditText) findViewById(R.id.aty_post_new_title);
-        mContent = (EditText) findViewById(R.id.aty_post_new_content);
-        mDrawAddImage = (SimpleDraweeView) findViewById(R.id.aty_post_new_add_image);
         mDrawAddImage.setImageURI(Uri.parse("res:/" + R.mipmap.add_image));
         mDrawAddImage.setOnClickListener(mListener);
 

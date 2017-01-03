@@ -25,6 +25,8 @@ import org.json.JSONObject;
 
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 import space.weme.remix.R;
@@ -108,7 +110,7 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             viewHolder.tvUniversity.setText(mPost.getSchool());
             viewHolder.tvTime.setText(StrUtils.timeTransfer(mPost.getTimestamp()));
             viewHolder.tvTitle.setText(mPost.getTitle());
-            viewHolder.tvContent.setText(mPost.getBody());
+            viewHolder.tvContent.setText(mPost.getContent());
             viewHolder.imagesGridLayout.removeAllViews();
             if (mPost.thumbnailUrl.size() <= 1) {
                 viewHolder.imagesGridLayout.setNumInRow(1);
@@ -166,7 +168,7 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             item.tvName.setText(postComment.getName());
             item.tvUniversity.setText(postComment.getSchool());
             item.tvTime.setText(StrUtils.timeTransfer(postComment.getTimestamp()));
-            item.tvContent.setText(postComment.getBody());
+            item.tvContent.setText(postComment.getContent());
             item.tvLike.setText(String.format("%d", postComment.getLikeCount()));
             item.tvCommit.setText(String.format("%d", postComment.getCommentCount()));
             if (postComment.getFlag().equals("0")) {
@@ -250,79 +252,105 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
 
     class PostViewHolder extends RecyclerView.ViewHolder {
+
+        @BindView(R.id.aty_post_title_avatar)
         SimpleDraweeView avatarDraw;
+
+        @BindView(R.id.aty_post_title_user)
         TextView tvName;
+
+        @BindView(R.id.aty_post_title_university)
         TextView tvUniversity;
+
+        @BindView(R.id.aty_post_title_time)
         TextView tvTime;
+
+        @BindView(R.id.aty_post_title_title)
         TextView tvTitle;
+
+        @BindView(R.id.aty_post_title_content)
         TextView tvContent;
+
+        @BindView(R.id.aty_post_title_image)
         GridLayout imagesGridLayout; // post images
 
+        @BindView(R.id.aty_post_title_like_number)
         TextView tvLikeNumber; // show like number
+
+        @BindView(R.id.aty_post_title_like_image)
         ImageView ivLike;
+
         // for like clickListener
+        @BindView(R.id.aty_post_title_like_layout)
         LinearLayout likeLayout;
 
+        @BindView(R.id.aty_post_title_reply_number)
         TextView tvCommit; // show commit number
+
+        @BindView(R.id.aty_post_title_reply_layout)
         LinearLayout commitLayout; // for commit listener
 
+        @BindView(R.id.aty_post_title_like_people)
         LinearLayout llLikePeoples; // liked people
 
         public PostViewHolder(View itemView) {
             super(itemView);
-            avatarDraw = (SimpleDraweeView) itemView.findViewById(R.id.aty_post_title_avatar);
-            tvName = (TextView) itemView.findViewById(R.id.aty_post_title_user);
-            tvUniversity = (TextView) itemView.findViewById(R.id.aty_post_title_university);
-            tvTime = (TextView) itemView.findViewById(R.id.aty_post_title_time);
-            tvTitle = (TextView) itemView.findViewById(R.id.aty_post_title_title);
-            tvContent = (TextView) itemView.findViewById(R.id.aty_post_title_content);
-            imagesGridLayout = (GridLayout) itemView.findViewById(R.id.aty_post_title_image);
-            tvLikeNumber = (TextView) itemView.findViewById(R.id.aty_post_title_like_number);
-            ivLike = (ImageView) itemView.findViewById(R.id.aty_post_title_like_image);
-            tvCommit = (TextView) itemView.findViewById(R.id.aty_post_title_reply_number);
-            commitLayout = (LinearLayout) itemView.findViewById(R.id.aty_post_title_reply_layout);
-            likeLayout = (LinearLayout) itemView.findViewById(R.id.aty_post_title_like_layout);
-            llLikePeoples = (LinearLayout) itemView.findViewById(R.id.aty_post_title_like_people);
+            ButterKnife.bind(this, itemView);
         }
     }
 
     class ItemViewHolder extends RecyclerView.ViewHolder {
+
+        @BindView(R.id.aty_post_reply_avatar)
         SimpleDraweeView avatarDraw;
+
+        @BindView(R.id.aty_post_reply_name)
         TextView tvName;
+
+        @BindView(R.id.aty_post_reply_university)
         TextView tvUniversity;
+
+        @BindView(R.id.aty_post_reply_time)
         TextView tvTime;
+
+        @BindView(R.id.aty_post_reply_content)
         TextView tvContent;
+
+        @BindView(R.id.aty_post_reply_reply_list)
         LinearLayout llReplyList;
+
+        @BindView(R.id.aty_post_reply_images)
         GridLayout imagesGridLayout;
+
+        @BindView(R.id.aty_post_reply_like_number)
         TextView tvLike;
+
+        @BindView(R.id.aty_post_reply_comment_number)
         TextView tvCommit;
+
+        @BindView(R.id.aty_post_reply_like_layout)
         LinearLayout llLike;
+
+        @BindView(R.id.aty_post_reply_commit_layout)
         LinearLayout llCommit;
+
+        @BindView(R.id.aty_post_reply_like_image)
         ImageView ivLike;
 
         public ItemViewHolder(View itemView) {
             super(itemView);
-            avatarDraw = (SimpleDraweeView) itemView.findViewById(R.id.aty_post_reply_avatar);
-            tvName = (TextView) itemView.findViewById(R.id.aty_post_reply_name);
-            tvUniversity = (TextView) itemView.findViewById(R.id.aty_post_reply_university);
-            tvTime = (TextView) itemView.findViewById(R.id.aty_post_reply_time);
-            tvContent = (TextView) itemView.findViewById(R.id.aty_post_reply_content);
-            llReplyList = (LinearLayout) itemView.findViewById(R.id.aty_post_reply_reply_list);
-            imagesGridLayout = (GridLayout) itemView.findViewById(R.id.aty_post_reply_images);
-            tvLike = (TextView) itemView.findViewById(R.id.aty_post_reply_like_number);
-            llLike = (LinearLayout) itemView.findViewById(R.id.aty_post_reply_like_layout);
-            ivLike = (ImageView) itemView.findViewById(R.id.aty_post_reply_like_image);
-            tvCommit = (TextView) itemView.findViewById(R.id.aty_post_reply_comment_number);
-            llCommit = (LinearLayout) itemView.findViewById(R.id.aty_post_reply_commit_layout);
+            ButterKnife.bind(this, itemView);
         }
     }
 
-    private static class ProgressViewHolder extends RecyclerView.ViewHolder {
+    static class ProgressViewHolder extends RecyclerView.ViewHolder {
+
+        @BindView(R.id.progress)
         public ProgressBar progressBar;
 
         public ProgressViewHolder(View v) {
             super(v);
-            progressBar = (ProgressBar) v.findViewById(R.id.progress);
+            ButterKnife.bind(this, v);
         }
     }
 

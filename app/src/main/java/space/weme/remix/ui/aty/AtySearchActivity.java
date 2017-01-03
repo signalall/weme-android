@@ -7,6 +7,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,43 +17,50 @@ import android.widget.TextView;
 import com.facebook.drawee.generic.RoundingParams;
 import com.facebook.drawee.view.SimpleDraweeView;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import space.weme.remix.R;
 import space.weme.remix.model.Activity;
+import space.weme.remix.service.ActivityService;
+import space.weme.remix.service.Services;
 import space.weme.remix.ui.base.SwipeActivity;
 import space.weme.remix.util.LogUtils;
-import space.weme.remix.util.OkHttpUtils;
 import space.weme.remix.util.StrUtils;
 
 public class AtySearchActivity extends SwipeActivity {
 
-    private static final String TAG="AtySearchActivity";
-    private List<Activity> list=new ArrayList<>();
-    private EditText editSearch;
-    private TextView txtCancel;
-    private RecyclerView recyclerSearch;
-    private searchAdapter adapter=new searchAdapter();
+    private static final String TAG = "AtySearchActivity";
+
+    @BindView(R.id.edit_search)
+    EditText editSearch;
+
+    @BindView(R.id.txt_search_cancel)
+    TextView txtCancel;
+
+    @BindView(R.id.aty_search_activity)
+    RecyclerView recyclerSearch;
+
+    private List<Activity> activityList = new ArrayList<>();
+
+    private searchAdapter adapter = new searchAdapter();
+
+    @OnClick(R.id.txt_search_cancel)
+    public void onSearchCancel() {
+        onBackPressed();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_search_activity);
-        recyclerSearch= (RecyclerView) findViewById(R.id.aty_search_activity);
+        ButterKnife.bind(this);
         recyclerSearch.setLayoutManager(new LinearLayoutManager(AtySearchActivity.this));
-        txtCancel= (TextView) findViewById(R.id.txt_search_cancel);
-        txtCancel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onBackPressed();
-            }
-        });
-        editSearch= (EditText) findViewById(R.id.edit_search);
         editSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -61,9 +69,9 @@ public class AtySearchActivity extends SwipeActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String str=s.toString();
-                if (str!=null&&!str.equals(""))
-                   getSearch(str);
+                String str = s.toString();
+                if (str != null && !str.equals(""))
+                    searchActivity(str);
             }
 
             @Override
@@ -73,45 +81,37 @@ public class AtySearchActivity extends SwipeActivity {
         });
     }
 
-    void getSearch(String text){
-        Map<String,String> map=new android.support.v4.util.ArrayMap<>();
-        map.put("token", StrUtils.token());
-        map.put("text", text);
-        OkHttpUtils.post(StrUtils.SEARCH_ACTIVITY, map, TAG, new OkHttpUtils.SimpleOkCallBack() {
-            @Override
-            public void onResponse(String s) {
-                JSONObject j = OkHttpUtils.parseJSON(AtySearchActivity.this, s);
-                String state = j.optString("state");
-                if (state.equals("successful")) {
-
-                    JSONArray array = j.optJSONArray("result");
-                    if (array == null) return;
-                    list.clear();
-                    for (int i = 0; i < array.length(); i++) {
-                        Activity act = Activity.fromJSON(array.optJSONObject(i));
-                        list.add(act);
+    void searchActivity(String text) {
+        Services.activityService()
+                .searchActivity(new ActivityService.SearchActivity(StrUtils.token(), text))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    if ("successful".equals(resp.getState())) {
+                        activityList.clear();
+                        activityList.addAll(resp.getResult());
+                        recyclerSearch.setAdapter(adapter);
+                        adapter.setList(activityList);
+                        adapter.notifyDataSetChanged();
                     }
-                    recyclerSearch.setAdapter(adapter);
-                    adapter.setList(list);
-                    adapter.notifyDataSetChanged();
-
-                }
-            }
-        });
-
+                }, ex -> {
+                    Log.e(TAG, "searchActivity: " + ex.getMessage());
+                });
     }
 
-    class searchAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
+    class searchAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         List<Activity> mList;
 
-        public void setList(List<Activity> list){mList=list;}
+        public void setList(List<Activity> list) {
+            mList = list;
+        }
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             RecyclerView.ViewHolder vh;
-            View v= LayoutInflater.from(AtySearchActivity.this).inflate(R.layout.fgt_activity_item,parent,false);
-            vh=new VH(v);
+            View v = LayoutInflater.from(AtySearchActivity.this).inflate(R.layout.fgt_activity_item, parent, false);
+            vh = new VH(v);
             return vh;
         }
 
@@ -119,12 +119,12 @@ public class AtySearchActivity extends SwipeActivity {
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             Activity activity = mList.get(position);
             VH item = (VH) holder;
-            item.mTvTitle.setText(activity.title);
-            item.mAvatar.setImageURI(Uri.parse(StrUtils.thumForID(activity.authorID + "")));
-            String count = activity.signNumber+"/"+activity.capacity;
+            item.mTvTitle.setText(activity.getTitle());
+            item.mAvatar.setImageURI(Uri.parse(StrUtils.thumForID(activity.getAuthorID() + "")));
+            String count = activity.getSignNumber() + "/" + activity.getCapacity();
             item.mTvCount.setText(count);
-            item.mTvTime.setText(activity.time);
-            item.mTvLocation.setText(activity.location);
+            item.mTvTime.setText(activity.getTime());
+            item.mTvLocation.setText(activity.getLocation());
         }
 
         @Override
@@ -132,34 +132,44 @@ public class AtySearchActivity extends SwipeActivity {
             return mList.size();
         }
 
-        class VH extends RecyclerView.ViewHolder{
+        class VH extends RecyclerView.ViewHolder {
+
+            @BindView(R.id.fgt_activity_item_image)
             SimpleDraweeView mAvatar;
+
+            @BindView(R.id.fgt_activity_item_title)
             TextView mTvTitle;
+
+            @BindView(R.id.fgt_activity_item_count)
             TextView mTvCount;
+
+            @BindView(R.id.fgt_activity_item_time)
             TextView mTvTime;
+
+            @BindView(R.id.fgt_activity_item_location)
             TextView mTvLocation;
+
             public VH(View itemView) {
                 super(itemView);
                 itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        Intent detail=new Intent(AtySearchActivity.this,AtyActivityDetail.class);
-                        detail.putExtra("activityid",mList.get(getAdapterPosition()).activityID);
-                        LogUtils.e(TAG, "id:" + mList.get(getAdapterPosition()).activityID);
+                        Intent detail = new Intent(AtySearchActivity.this, AtyActivityDetail.class);
+                        detail.putExtra("activityid", mList.get(getAdapterPosition()).getId());
+                        LogUtils.e(TAG, "id:" + mList.get(getAdapterPosition()).getId());
                         startActivity(detail);
                     }
                 });
-                mAvatar = (SimpleDraweeView) itemView.findViewById(R.id.fgt_activity_item_image);
+
+                ButterKnife.bind(this, itemView);
+
                 RoundingParams roundingParams = RoundingParams.fromCornersRadius(5f);
                 roundingParams.setRoundAsCircle(true);
                 mAvatar.getHierarchy().setRoundingParams(roundingParams);
-                mTvTitle = (TextView) itemView.findViewById(R.id.fgt_activity_item_title);
-                mTvCount = (TextView) itemView.findViewById(R.id.fgt_activity_item_count);
-                mTvTime = (TextView) itemView.findViewById(R.id.fgt_activity_item_time);
-                mTvLocation = (TextView) itemView.findViewById(R.id.fgt_activity_item_location);
             }
         }
     }
+
     protected String tag() {
         return TAG;
     }
