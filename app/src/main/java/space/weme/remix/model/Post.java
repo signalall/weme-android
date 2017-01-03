@@ -1,67 +1,166 @@
 package space.weme.remix.model;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.google.gson.annotations.SerializedName;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Liujilong on 2016/1/28.
  * liujilong.me@gmail.com
  */
 public class Post {
-    public String postId;
-    public String userId;
-    public String name;
-    public String school;
-    public String gender;
-    public String timestamp;
-    public String title;
-    public String body;
-    public String likenumber;
-    public String commentnumber;
-    public ArrayList<String> imageUrl;
-    public ArrayList<String> thumbnailUrl;
 
+    @SerializedName("postid")
+    private String postId;
 
-    public ArrayList<Integer> likeusers;
+    @SerializedName("userid")
+    private String userId;
 
-    // whether current user has liked this post
-    public String flag;
+    @SerializedName("name")
+    private String name;
 
-    private Post(){}
+    @SerializedName("school")
+    private String school;
 
-    public static Post fromJSON(JSONObject j){
-        Post post = new Post();
-        post.body = j.optString("body");
-        post.commentnumber = j.optString("commentnumber");
-        post.gender = j.optString("gender");
-        post.likenumber = j.optString("likenumber");
-        post.name = j.optString("name");
-        post.postId = j.optString("postid");
-        post.school = j.optString("school");
-        post.timestamp = j.optString("timestamp");
-        post.title = j.optString("title");
-        post.userId = j.optString("userid");
-        post.imageUrl = new ArrayList<>();
-        JSONArray array = j.optJSONArray("imageurl");
-        for(int i = 0; i<array.length(); i++){
-            post.imageUrl.add(array.optString(i));
-        }
-        array = j.optJSONArray("thumbnail");
-        post.thumbnailUrl = new ArrayList<>();
-        for(int i = 0; i<array.length(); i++){
-            post.thumbnailUrl.add(array.optString(i));
-        }
+    @SerializedName("gender")
+    private String gender;
 
-        post.flag = j.optString("flag");
-        array = j.optJSONArray("likeusers");
-        if(array!=null) {
-            post.likeusers = new ArrayList<>();
-            for (int i = 0; i < array.length(); i++) {
-                post.likeusers.add(array.optInt(i));
-            }
-        }
-        return post;
+    @SerializedName("timestamp")
+    private String timestamp;
+
+    @SerializedName("title")
+    private String title;
+
+    @SerializedName("body")
+    private String body;
+
+    @SerializedName("likenumber")
+    public String likeNumber;
+
+    @SerializedName("commentnumber")
+    public String commentNumber;
+
+    @SerializedName("imageurl")
+    public List<String> imageUrl;
+
+    @SerializedName("thumbnail")
+    public List<String> thumbnailUrl;
+
+    @SerializedName("likeusers")
+    public List<Integer> likeUserIds;
+
+    @SerializedName("flag")
+    public String flag; // whether current user has liked this post
+
+    public String getPostId() {
+        return postId;
+    }
+
+    public void setPostId(String postId) {
+        this.postId = postId;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getSchool() {
+        return school;
+    }
+
+    public void setSchool(String school) {
+        this.school = school;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getBody() {
+        return body;
+    }
+
+    public void setBody(String body) {
+        this.body = body;
+    }
+
+    public String getLikeNumber() {
+        return likeNumber;
+    }
+
+    public void setLikeNumber(String likeNumber) {
+        this.likeNumber = likeNumber;
+    }
+
+    public String getCommentNumber() {
+        return commentNumber;
+    }
+
+    public void setCommentNumber(String commentNumber) {
+        this.commentNumber = commentNumber;
+    }
+
+    public List<String> getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(List<String> imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public List<String> getThumbnailUrl() {
+        return thumbnailUrl;
+    }
+
+    public void setThumbnailUrl(List<String> thumbnailUrl) {
+        this.thumbnailUrl = thumbnailUrl;
+    }
+
+    public List<Integer> getLikeUserIds() {
+        return likeUserIds;
+    }
+
+    public void setLikeUserIds(List<Integer> likeUserIds) {
+        this.likeUserIds = likeUserIds;
+    }
+
+    public String getFlag() {
+        return flag;
+    }
+
+    public void setFlag(String flag) {
+        this.flag = flag;
     }
 }

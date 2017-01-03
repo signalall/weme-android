@@ -32,8 +32,13 @@ import com.facebook.imagepipeline.image.ImageInfo;
 
 import org.json.JSONObject;
 
+import rx.Scheduler;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import space.weme.remix.R;
 import space.weme.remix.model.Food;
+import space.weme.remix.service.FoodService;
+import space.weme.remix.service.Services;
 import space.weme.remix.ui.find.AtyFoodMap;
 import space.weme.remix.ui.find.AtyDiscoveryFood;
 import space.weme.remix.ui.user.AtyInfo;
@@ -83,8 +88,6 @@ public class CardFood extends CardView {
     float preValue = 0;
 
 
-
-
     public CardFood(Context context) {
         super(context);
     }
@@ -97,7 +100,7 @@ public class CardFood extends CardView {
         super(context, attrs, defStyleAttr);
     }
 
-    public static CardFood fromXML(AtyDiscoveryFood context, ViewGroup parent, FrameLayout.LayoutParams params){
+    public static CardFood fromXML(AtyDiscoveryFood context, ViewGroup parent, FrameLayout.LayoutParams params) {
         CardFood card = (CardFood) LayoutInflater.from(context).inflate(R.layout.aty_discovery_food_card, parent, false);
         card.setLayoutParams(params);
         card.config();
@@ -106,7 +109,7 @@ public class CardFood extends CardView {
     }
 
 
-    public void turnToFront(){
+    public void turnToFront() {
         mFront.setVisibility(VISIBLE);
         mBack.setVisibility(INVISIBLE);
         mDetail.setVisibility(INVISIBLE);
@@ -114,7 +117,7 @@ public class CardFood extends CardView {
         state = STATE_FRONT;
     }
 
-    public void turnToBack(){
+    public void turnToBack() {
         mFront.setVisibility(INVISIBLE);
         mBack.setVisibility(VISIBLE);
         mDetail.setVisibility(INVISIBLE);
@@ -124,7 +127,7 @@ public class CardFood extends CardView {
         setRotationY(0);
     }
 
-    public void turnToDetail(){
+    public void turnToDetail() {
         mFront.setVisibility(INVISIBLE);
         mBack.setVisibility(INVISIBLE);
         mDetail.setVisibility(VISIBLE);
@@ -133,11 +136,10 @@ public class CardFood extends CardView {
     }
 
 
-
-    private void config(){
+    private void config() {
         setCameraDistance(50000);
 
-        if(getChildCount()<2){
+        if (getChildCount() < 2) {
             return;
         }
         mBack = getChildAt(0);
@@ -182,66 +184,66 @@ public class CardFood extends CardView {
 
     }
 
-    public void resize(){
+    public void resize() {
         ViewGroup.LayoutParams params = mFrontPicture.getLayoutParams();
         params.height = mFrontPicture.getWidth();
         mFrontPicture.setLayoutParams(params);
-        RelativeLayout.LayoutParams params1  = (RelativeLayout.LayoutParams) mFrontAvatar.getLayoutParams();
-        params1.setMargins(0,params.height- DimensionUtils.dp2px(24),0,0);
+        RelativeLayout.LayoutParams params1 = (RelativeLayout.LayoutParams) mFrontAvatar.getLayoutParams();
+        params1.setMargins(0, params.height - DimensionUtils.dp2px(24), 0, 0);
         mFrontAvatar.setLayoutParams(params1);
     }
 
-    public void resizeDetail(){
+    public void resizeDetail() {
         LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) mDetailPicture.getLayoutParams();
-        params.height = mDetail.getHeight()/3;
-        params.width = mDetail.getHeight()/3;
+        params.height = mDetail.getHeight() / 3;
+        params.width = mDetail.getHeight() / 3;
         mDetailPicture.setLayoutParams(params);
     }
 
-    public void showFood(Food food){
+    public void showFood(Food food) {
         currentFood = food;
 
-        mFrontAvatar.setImageURI(Uri.parse(StrUtils.thumForID(food.authorId)));
+        mFrontAvatar.setImageURI(Uri.parse(StrUtils.thumForID(food.getAuthorId())));
         showPicture(food);
-        mFrontLikeNumber.setText(String.format("%d", food.likeNumber));
+        mFrontLikeNumber.setText(String.format("%d", food.getLikeNumber()));
 
 
-        mFrontLikeImage.setImageResource(food.likeFlag ? R.mipmap.like_on : R.mipmap.like_off);
-        String name = food.author + aty.getResources().getString(R.string.recommend);
+        mFrontLikeImage.setImageResource(food.getLikeFlag() == 1 ? R.mipmap.like_on : R.mipmap.like_off);
+        String name = food.getAuthor() + aty.getResources().getString(R.string.recommend);
         mFrontUserName.setText(name);
-        mFrontName.setText(food.title);
-        LatLng foodLL = new LatLng(food.latitude,food.longitude);
+        mFrontName.setText(food.getTitle());
+        LatLng foodLL = new LatLng(Double.valueOf(food.getLatitude()), Double.valueOf(food.getLongitude()));
         LatLng curLL = aty.getCurrentLatLng();
-        if(curLL==null) {
+        if (curLL == null) {
             mFrontLocationText.setText(R.string.distance_unknown);
-        }else{
+        } else {
             float meters = AMapUtils.calculateLineDistance(foodLL, curLL);
             String distance = StrUtils.distanceTransfer(meters);
             mFrontLocationText.setText(distance);
         }
         mLikeListener.setFood(food);
 
-        mDetailPicture.setImageURI(Uri.parse(food.url));
-        mDetailLocation.setText(food.location);
-        String price = aty.getResources().getString(R.string.pre_people)+food.price+" RMB";
+        mDetailPicture.setImageURI(Uri.parse(food.getUrl()));
+        mDetailLocation.setText(food.getLocation());
+        String price = aty.getResources().getString(R.string.pre_people) + food.getPrice() + " RMB";
         mDetailPrice.setText(price);
-        mDetailComment.setText("\""+food.comment+"\"");
-        String author = aty.getResources().getString(R.string.come_from) + food.author;
+        mDetailComment.setText("\"" + food.getComment() + "\"");
+        String author = aty.getResources().getString(R.string.come_from) + food.getAuthor();
         mDetailName.setText(author);
 
         mMapListener.setFood(food);
-        mUserListener.setUserId(food.authorId);
+        mUserListener.setUserId(food.getAuthorId());
     }
 
     @SuppressWarnings("unchecked")
-    private void showPicture(Food food){
+    private void showPicture(Food food) {
         ControllerListener controllerListener = new BaseControllerListener<ImageInfo>() {
             @Override
-            public void onFinalImageSet(  String id, ImageInfo imageInfo, Animatable anim) {
+            public void onFinalImageSet(String id, ImageInfo imageInfo, Animatable anim) {
                 if (imageInfo == null) {
                     return;
                 }
-                if(imageInfo instanceof CloseableStaticBitmap) {
+                if (imageInfo instanceof CloseableStaticBitmap) {
                     CloseableStaticBitmap b = (CloseableStaticBitmap) imageInfo;
                     Bitmap bitmap = b.getUnderlyingBitmap();
                     aty.setBackground(bitmap);
@@ -257,7 +259,7 @@ public class CardFood extends CardView {
             }
         };
 
-        Uri uri = Uri.parse(food.url);
+        Uri uri = Uri.parse(food.getUrl());
         DraweeController controller = Fresco.newDraweeControllerBuilder()
                 .setControllerListener(controllerListener)
                 .setUri(uri)
@@ -265,8 +267,8 @@ public class CardFood extends CardView {
         mFrontPicture.setController(controller);
     }
 
-    private class LikeListener implements View.OnClickListener{
-       private Food food;
+    private class LikeListener implements View.OnClickListener {
+        private Food food;
 
         public void setFood(Food food) {
             this.food = food;
@@ -274,30 +276,27 @@ public class CardFood extends CardView {
 
         @Override
         public void onClick(View v) {
-            if(food.likeFlag){
+            if (food.getLikeFlag() == 1) {
                 return;
             }
-            ArrayMap<String,String> param = new ArrayMap<>();
-            param.put("token", StrUtils.token());
-            param.put("foodcardid",food.ID);
-            OkHttpUtils.post(StrUtils.LIKE_FOOD_URL,param, aty.tag(),new OkHttpUtils.SimpleOkCallBack(){
-                @Override
-                public void onResponse(String s) {
-                    JSONObject j = OkHttpUtils.parseJSON(aty,s);
-                    if(j == null || food != currentFood){
-                        return;
-                    }
-                    mFrontLikeNumber.setText(String.format("%d",food.likeNumber+1));
-                    mFrontLikeImage.setImageResource(R.mipmap.like_on);
-                }
-            });
+            Services.foodService()
+                    .likeFood(new FoodService.LikeFood(StrUtils.token(), food.getID()))
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(resp -> {
+                        if (resp.getResult() == null || food != currentFood) {
+                            return;
+                        }
+                        mFrontLikeNumber.setText(String.format("%d", food.getLikeNumber() + 1));
+                        mFrontLikeImage.setImageResource(R.mipmap.like_on);
+                    });
         }
     }
 
-    private class DetailListener implements View.OnClickListener{
+    private class DetailListener implements View.OnClickListener {
         @Override
         public void onClick(View v) {
-            if(state==STATE_FRONT) {
+            if (state == STATE_FRONT) {
                 ObjectAnimator a3 = ObjectAnimator.ofFloat(CardFood.this, "RotationY", 0, 180).setDuration(500);
                 a3.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                     @Override
@@ -312,7 +311,7 @@ public class CardFood extends CardView {
                     }
                 });
                 a3.start();
-            }else if(state==STATE_DETAIL){
+            } else if (state == STATE_DETAIL) {
                 ObjectAnimator a3 = ObjectAnimator.ofFloat(CardFood.this, "RotationY", 180, 0).setDuration(500);
                 a3.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                     @Override
@@ -329,28 +328,32 @@ public class CardFood extends CardView {
         }
     }
 
-    private class MapListener implements View.OnClickListener{
+    private class MapListener implements View.OnClickListener {
         Food currentFood;
-        void setFood(Food food){
+
+        void setFood(Food food) {
             currentFood = food;
         }
+
         @Override
         public void onClick(View v) {
             Intent i = new Intent(aty, AtyFoodMap.class);
-            i.putExtra(AtyFoodMap.INTENT_LAT,currentFood.latitude);
-            i.putExtra(AtyFoodMap.INTENT_LON, currentFood.longitude);
+            i.putExtra(AtyFoodMap.INTENT_LAT, currentFood.getLatitude());
+            i.putExtra(AtyFoodMap.INTENT_LON, currentFood.getLongitude());
             aty.startActivity(i);
         }
     }
 
-    private class UserListener implements View.OnClickListener{
+    private class UserListener implements View.OnClickListener {
         String userId;
-        void setUserId(String id){
-            userId  = id;
+
+        void setUserId(String id) {
+            userId = id;
         }
+
         @Override
         public void onClick(View v) {
-            if(userId != null) {
+            if (userId != null) {
                 Intent i = new Intent(aty, AtyInfo.class);
                 i.putExtra(AtyInfo.ID_INTENT, userId);
                 aty.startActivity(i);

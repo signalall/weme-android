@@ -269,7 +269,7 @@ public class AtyEditInfo extends BaseActivity {
         if(etWeChat.getText().length()!=0){
             param.put("wechat", etWeChat.getText().toString());
         }
-        mProgressDialog = ProgressDialog.show(AtyEditInfo.this, null, getResources().getString(R.string.committing));
+        mProgressDialog = ProgressDialog.show(AtyEditInfo.this, null, getResources().getString(R.string.commenting));
         OkHttpUtils.post(StrUtils.EDIT_PROFILE_URL, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
             @Override
             public void onResponse(String s) {

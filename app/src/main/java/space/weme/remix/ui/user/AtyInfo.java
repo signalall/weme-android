@@ -167,7 +167,7 @@ public class AtyInfo extends BaseActivity {
                     if (j == null) {
                         return;
                     }
-                    int count = j.optInt("likenumber");
+                    int count = j.optInt("likeNumber");
                     mLikeCount.setText(count + "");
                 }
             });

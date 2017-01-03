@@ -36,8 +36,8 @@ import static space.weme.remix.R.id.txt_public_author;
 public class AtyActivityDetail extends SwipeActivity {
     private static final String TAG = "AtyDetail";
     public static final String INTENT = "activityid";
-    private static final int MAX_PICTURE=2;
-    private static final int REQUEST_IMAGE=2;
+    private static final int MAX_PICTURE = 2;
+    private static final int REQUEST_IMAGE = 2;
     private static final MediaType MEDIA_TYPE_PNG = MediaType.parse("image/png");
     private int activityid;
     private ArrayList<String> path;
@@ -64,9 +64,9 @@ public class AtyActivityDetail extends SwipeActivity {
         mSwipeBackLayout.setEdgeSize(DimensionUtils.getDisplay().widthPixels / 2);
         mSwipeBackLayout.setEdgeTrackingEnabled(SwipeBackLayout.EDGE_LEFT);
 
-        activityid=getIntent().getIntExtra(INTENT,-1);
+        activityid = getIntent().getIntExtra(INTENT, -1);
         LogUtils.d(TAG, "id:" + activityid);
-        if (activityid!=-1){
+        if (activityid != -1) {
             initView();
             initData();
         }
@@ -76,25 +76,25 @@ public class AtyActivityDetail extends SwipeActivity {
         atyAvatar = (SimpleDraweeView) findViewById(R.id.sign_pic);
         txtTime = (TextView) findViewById(R.id.sign_time);
         txtLocation = (TextView) findViewById(R.id.sign_location);
-        txtSchool= (TextView) findViewById(R.id.txt_public_school);
-        txtAuthor= (TextView) findViewById(txt_public_author);
-        txtDetail= (TextView) findViewById(R.id.sign_detail);
-        txtRemark= (TextView) findViewById(R.id.sign_remark);
-        txtSignNumber= (TextView) findViewById(R.id.sign_number);
-        btnSign= (Button) findViewById(R.id.btn_sign);
-        btnLove= (Button) findViewById(R.id.btn_love);
+        txtSchool = (TextView) findViewById(R.id.txt_public_school);
+        txtAuthor = (TextView) findViewById(txt_public_author);
+        txtDetail = (TextView) findViewById(R.id.sign_detail);
+        txtRemark = (TextView) findViewById(R.id.sign_remark);
+        txtSignNumber = (TextView) findViewById(R.id.sign_number);
+        btnSign = (Button) findViewById(R.id.btn_sign);
+        btnLove = (Button) findViewById(R.id.btn_love);
         btnSign.setBackgroundResource(R.drawable.bg_login_btn_pressed);
         btnLove.setBackgroundResource(R.drawable.bg_login_btn_pressed);
         avatar = (SimpleDraweeView) findViewById(R.id.image);
         ViewGroup.LayoutParams params = avatar.getLayoutParams();
-        params.height = DimensionUtils.getDisplay().widthPixels/2;
+        params.height = DimensionUtils.getDisplay().widthPixels / 2;
         avatar.setLayoutParams(params);
         tvSlogan = (TextView) findViewById(R.id.slogan);
         ((TextView) findViewById(R.id.main_title)).setText(R.string.activity_detail);
     }
 
-    void initData(){
-        ArrayMap<String,String> param = new ArrayMap<>();
+    void initData() {
+        ArrayMap<String, String> param = new ArrayMap<>();
         param.put("token", StrUtils.token());
         param.put("activityid", String.valueOf(activityid));
         OkHttpUtils.post(StrUtils.GET_ACTIVITY_DETAIL_URL, param, TAG, new SimpleOkCallBack() {
@@ -107,7 +107,7 @@ public class AtyActivityDetail extends SwipeActivity {
                 final AtyDetail detail = AtyDetail.fromJSON(result);
                 RoundingParams roundingParams = RoundingParams.fromCornersRadius(5f);
                 roundingParams.setRoundAsCircle(true);
-                ((TextView)findViewById(R.id.main_title)).setText(detail.title);
+                ((TextView) findViewById(R.id.main_title)).setText(detail.title);
                 atyAvatar.getHierarchy().setRoundingParams(roundingParams);
                 atyAvatar.setImageURI(Uri.parse(StrUtils.thumForID(detail.authorid + "")));
                 txtTime.setText(detail.time);
@@ -164,7 +164,7 @@ public class AtyActivityDetail extends SwipeActivity {
 
     }
 
-    protected void showDialog(String msg, final int flag){
+    protected void showDialog(String msg, final int flag) {
         new WDialog.Builder(AtyActivityDetail.this).setMessage(msg)
                 .setPositive(R.string.sure, new View.OnClickListener() {
                     @Override
@@ -194,9 +194,9 @@ public class AtyActivityDetail extends SwipeActivity {
 
     }
 
-    void singIn(){
+    void singIn() {
         String url = StrUtils.SIGN_ACTIVITY;
-        ArrayMap<String,String> map=new ArrayMap<>();
+        ArrayMap<String, String> map = new ArrayMap<>();
         map.put("token", StrUtils.token());
         map.put("activityid", String.valueOf(activityid));
         //signup 路由有bug
@@ -207,7 +207,7 @@ public class AtyActivityDetail extends SwipeActivity {
                 JSONObject j = OkHttpUtils.parseJSON(AtyActivityDetail.this, s);
                 if (j != null) {
                     initData();
-                    Toast.makeText(AtyActivityDetail.this,"报名成功",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(AtyActivityDetail.this, "报名成功", Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -215,8 +215,8 @@ public class AtyActivityDetail extends SwipeActivity {
     }
 
 
-    void likeSignAty(String url){
-        ArrayMap<String,String> map=new ArrayMap<>();
+    void likeSignAty(String url) {
+        ArrayMap<String, String> map = new ArrayMap<>();
         map.put("token", StrUtils.token());
         map.put("activityid", String.valueOf(activityid));
         //signup 路由有bug
@@ -232,7 +232,7 @@ public class AtyActivityDetail extends SwipeActivity {
         });
     }
 
-    void chooseImage(){
+    void chooseImage() {
         Intent intent = new Intent(AtyActivityDetail.this, MultiImageSelectorActivity.class);
         // 是否显示拍摄图片
         intent.putExtra(MultiImageSelectorActivity.EXTRA_SHOW_CAMERA, true);
@@ -247,25 +247,25 @@ public class AtyActivityDetail extends SwipeActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_IMAGE&&resultCode == android.app.Activity.RESULT_OK) {
-            path=data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
-            if (path!=null&&!path.isEmpty()){
-                Map<String,String> map=new ArrayMap<>();
+        if (requestCode == REQUEST_IMAGE && resultCode == android.app.Activity.RESULT_OK) {
+            path = data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
+            if (path != null && !path.isEmpty()) {
+                Map<String, String> map = new ArrayMap<>();
                 map.put("token", StrUtils.token());
-                map.put("type","-9");
+                map.put("type", "-9");
                 map.put("activityid", String.valueOf(activityid));
                 final int total = path.size();
                 final int[] cur = {0};
-                for (int i=0;i<path.size();i++){
-                    map.put("number",String.valueOf(i+1));
-                    Toast.makeText(AtyActivityDetail.this,"正在上传生活照,请等待",Toast.LENGTH_SHORT).show();
+                for (int i = 0; i < path.size(); i++) {
+                    map.put("number", String.valueOf(i + 1));
+                    Toast.makeText(AtyActivityDetail.this, "正在上传生活照,请等待", Toast.LENGTH_SHORT).show();
                     OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, map, path.get(i), MEDIA_TYPE_PNG, TAG, new SimpleOkCallBack() {
                         @Override
                         public void onResponse(String s) {
                             JSONObject j = OkHttpUtils.parseJSON(AtyActivityDetail.this, s);
                             if (j != null) {
                                 cur[0]++;
-                                if(cur[0]==total){
+                                if (cur[0] == total) {
                                     singIn();
                                 }
                             }

@@ -36,8 +36,12 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import space.weme.remix.R;
 import space.weme.remix.model.Food;
+import space.weme.remix.service.FoodService;
+import space.weme.remix.service.Services;
 import space.weme.remix.ui.base.BaseActivity;
 import space.weme.remix.util.BitmapUtils;
 import space.weme.remix.util.DimensionUtils;
@@ -103,17 +107,17 @@ public class AtyDiscoveryFood extends BaseActivity {
         flBackground = (FrameLayout) findViewById(R.id.aty_discovery_background);
 
         BitmapDrawable b = (BitmapDrawable) getResources().getDrawable(R.mipmap.spade_bk);
-        if(b!=null) {
+        if (b != null) {
             setBackground(b.getBitmap());
         }
 
 
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(0,0);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(0, 0);
         DisplayMetrics displayMetrics = DimensionUtils.getDisplay();
 
-        params.width = displayMetrics.widthPixels*7/10;
-        params.height = params.width*3/2;
-        params.gravity= Gravity.CENTER;
+        params.width = displayMetrics.widthPixels * 7 / 10;
+        params.height = params.width * 3 / 2;
+        params.gravity = Gravity.CENTER;
         mCard = CardFood.fromXML(this, flBackground, params);
         flBackground.addView(mCard);
 
@@ -161,40 +165,32 @@ public class AtyDiscoveryFood extends BaseActivity {
     }
 
 
-    private void fetchFood(){
+    private void fetchFood() {
         isLoading = true;
-        ArrayMap<String,String> map = new ArrayMap<>();
-        map.put("token", StrUtils.token());
-        OkHttpUtils.post(StrUtils.GET_RECOMMEND_FOOD, map, TAG, new OkHttpUtils.SimpleOkCallBack() {
-            @Override
-            public void onFailure(IOException e) {
-                isLoading = false;
-            }
-
-            @Override
-            public void onResponse(String s) {
-                isLoading = false;
-                LogUtils.i(TAG, s);
-                JSONObject j = OkHttpUtils.parseJSON(AtyDiscoveryFood.this, s);
-                if (j == null) {
-                    return;
-                }
-                foodList.clear();
-                JSONArray array = j.optJSONArray("result");
-                for (int i = 0; i < array.length(); i++) {
-                    foodList.add(Food.fromJSON(array.optJSONObject(i)));
-                }
-                if (foodList.size() > 0) {
-                    mCard.showFood(foodList.get(0));
-                }
-            }
-        });
+        Services.foodService()
+                .getRecommendFood(new FoodService.GetRecommendFood(StrUtils.token()))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    isLoading = false;
+                    LogUtils.i(TAG, resp.toString());
+                    if (resp.getResult() == null) {
+                        return;
+                    }
+                    foodList.clear();
+                    foodList.addAll(resp.getResult());
+                    if (foodList.size() > 0) {
+                        mCard.showFood(foodList.get(0));
+                    }
+                }, ex -> {
+                    isLoading = false;
+                });
     }
 
     @SuppressWarnings("deprecation")
-    public void setBackground(final Bitmap b){
+    public void setBackground(final Bitmap b) {
         LogUtils.i("Time", "Label 1 : " + System.currentTimeMillis());
-        if(b == null){
+        if (b == null) {
             return;
         }
         exec.execute(new Runnable() {
@@ -218,22 +214,22 @@ public class AtyDiscoveryFood extends BaseActivity {
     }
 
 
-    private void startAnimation(){
+    private void startAnimation() {
         currentIndex++;
-        if(currentIndex>=foodList.size()&& !isLoading){
+        if (currentIndex >= foodList.size() && !isLoading) {
             fetchFood();
-            currentIndex=0;
+            currentIndex = 0;
         }
-        ObjectAnimator a1 =  ObjectAnimator.ofFloat(mCard, "TranslationY", mTranslationY, 0)
+        ObjectAnimator a1 = ObjectAnimator.ofFloat(mCard, "TranslationY", mTranslationY, 0)
                 .setDuration(500);
-        ObjectAnimator a2 = ObjectAnimator.ofFloat(mCard,"RotationX",0,180).setDuration(500);
+        ObjectAnimator a2 = ObjectAnimator.ofFloat(mCard, "RotationX", 0, 180).setDuration(500);
         a2.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 float value = (float) animation.getAnimatedValue();
 
                 mCard.resize();
-                LogUtils.d(TAG,""+value);
+                LogUtils.d(TAG, "" + value);
                 if (preValue < 90 && value >= 90) {
                     mCard.turnToFront();
                     if (foodList.size() != 0) {
@@ -262,27 +258,27 @@ public class AtyDiscoveryFood extends BaseActivity {
             public void onAnimationRepeat(Animator animation) {
             }
         });
-        if(state==STATE_FIRST){
-            state=STATE_ANIMATING;
+        if (state == STATE_FIRST) {
+            state = STATE_ANIMATING;
             AnimatorSet set = new AnimatorSet();
             set.playSequentially(a1, a2);
             set.start();
-        }else{
-            state=STATE_ANIMATING;
-            ObjectAnimator a3 = ObjectAnimator.ofFloat(mCard,"RotationX",180,0).setDuration(500);
+        } else {
+            state = STATE_ANIMATING;
+            ObjectAnimator a3 = ObjectAnimator.ofFloat(mCard, "RotationX", 180, 0).setDuration(500);
             a3.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
                 public void onAnimationUpdate(ValueAnimator animation) {
                     float value = (float) animation.getAnimatedValue();
 
                     mCard.resize();
-                    if (preValue>90 && value <= 90) {
+                    if (preValue > 90 && value <= 90) {
                         mCard.turnToBack();
                     }
                     preValue = value;
                 }
             });
-            ObjectAnimator a4 =  ObjectAnimator.ofFloat(mCard, "TranslationY", 0, mTranslationY)
+            ObjectAnimator a4 = ObjectAnimator.ofFloat(mCard, "TranslationY", 0, mTranslationY)
                     .setDuration(500);
 
             AnimatorSet set = new AnimatorSet();
@@ -292,13 +288,13 @@ public class AtyDiscoveryFood extends BaseActivity {
     }
 
 
-    private void ivMoreClicked(){
-        final Dialog dialog = new Dialog(AtyDiscoveryFood.this,R.style.DialogSlideAnim);
-        View content = LayoutInflater.from(this).inflate(R.layout.aty_discovery_food_option,flBackground,false);
+    private void ivMoreClicked() {
+        final Dialog dialog = new Dialog(AtyDiscoveryFood.this, R.style.DialogSlideAnim);
+        View content = LayoutInflater.from(this).inflate(R.layout.aty_discovery_food_option, flBackground, false);
         View.OnClickListener popupListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(v.getId()==R.id.aty_discovery_option_add){
+                if (v.getId() == R.id.aty_discovery_option_add) {
                     LogUtils.i(TAG, "add food card");
                     startActivity(new Intent(AtyDiscoveryFood.this, AtyAddFood.class));
                 }
@@ -316,10 +312,10 @@ public class AtyDiscoveryFood extends BaseActivity {
         dialog.show();
     }
 
-    public LatLng getCurrentLatLng(){
-        if(mapLocation==null){
+    public LatLng getCurrentLatLng() {
+        if (mapLocation == null) {
             return null;
-        }else {
+        } else {
             return new LatLng(mapLocation.getLatitude(), mapLocation.getLongitude());
         }
     }

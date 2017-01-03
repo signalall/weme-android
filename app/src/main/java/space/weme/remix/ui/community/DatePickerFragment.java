@@ -18,7 +18,7 @@ public class DatePickerFragment extends DialogFragment {
         this.dateSetListener = dateSetListener;
     }
 
-    public DatePickerFragment(){
+    public DatePickerFragment() {
     }
 
 

@@ -85,7 +85,7 @@ public class AtyMessageReply extends AtyImage {
         param.put("token", StrUtils.token());
         param.put("text",mEditor.getText().toString());
         param.put("RecId", sendID);
-        mProgressDialog = ProgressDialog.show(AtyMessageReply.this, null, getResources().getString(R.string.committing));
+        mProgressDialog = ProgressDialog.show(AtyMessageReply.this, null, getResources().getString(R.string.commenting));
         OkHttpUtils.post(StrUtils.SEND_MESSAGE,param,TAG, new OkHttpUtils.SimpleOkCallBack(){
             @Override
             public void onFailure(IOException e) {

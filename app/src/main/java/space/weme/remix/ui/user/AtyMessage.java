@@ -56,10 +56,10 @@ public class AtyMessage extends BaseActivity {
 
 
     }
-    protected void onResume(){
+
+    protected void onResume() {
         super.onResume();
     }
-
 
 
     @Override
@@ -76,7 +76,7 @@ public class AtyMessage extends BaseActivity {
 
         @Override
         public Fragment getItem(int position) {
-            if(position == 0) return FgtPrivateMessage.newInstance();
+            if (position == 0) return FgtPrivateMessage.newInstance();
             else return FgtSystemMessage.newInstance();
         }
 
@@ -87,16 +87,16 @@ public class AtyMessage extends BaseActivity {
 
         @Override
         public CharSequence getPageTitle(int position) {
-            if(position==0) return getResources().getString(R.string.private_letter);
-            else return getResources().getString(R.string.reply);
+            if (position == 0) return getResources().getString(R.string.private_letter);
+            else return getResources().getString(R.string.comment);
         }
     }
 
-    public static class FgtPrivateMessage extends BaseFragment{
+    public static class FgtPrivateMessage extends BaseFragment {
         private List<Message> messageList;
         private MessageAdapter mAdapter;
 
-        public static FgtPrivateMessage newInstance(){
+        public static FgtPrivateMessage newInstance() {
             FgtPrivateMessage f = new FgtPrivateMessage();
             Bundle bundle = new Bundle();
             f.setArguments(bundle);
@@ -117,8 +117,9 @@ public class AtyMessage extends BaseActivity {
             getMessage();
             return v;
         }
-        private void getMessage(){
-            ArrayMap<String,String> param = new ArrayMap<>();
+
+        private void getMessage() {
+            ArrayMap<String, String> param = new ArrayMap<>();
             param.put("token", StrUtils.token());
             OkHttpUtils.post(StrUtils.GET_USER_MESSAGE_LIST, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
                 @Override
@@ -145,12 +146,12 @@ public class AtyMessage extends BaseActivity {
         }
     }
 
-    public static class FgtSystemMessage extends BaseFragment{
+    public static class FgtSystemMessage extends BaseFragment {
         private List<SystemMessage> messageList;
         private SystemMessageAdapter mAdapter;
 
 
-        public static FgtSystemMessage newInstance(){
+        public static FgtSystemMessage newInstance() {
             FgtSystemMessage f = new FgtSystemMessage();
             Bundle bundle = new Bundle();
             f.setArguments(bundle);
@@ -183,10 +184,10 @@ public class AtyMessage extends BaseActivity {
             return "FgtSystemMessage";
         }
 
-        private void getSystemMessage(){
-            ArrayMap<String,String> param = new ArrayMap<>();
+        private void getSystemMessage() {
+            ArrayMap<String, String> param = new ArrayMap<>();
             param.put("token", StrUtils.token());
-            OkHttpUtils.post(StrUtils.GET_SYSTEM_NOTIFICATION,param,TAG, new OkHttpUtils.SimpleOkCallBack(){
+            OkHttpUtils.post(StrUtils.GET_SYSTEM_NOTIFICATION, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
                 @Override
                 public void onResponse(String s) {
                     LogUtils.i(TAG, s);
@@ -198,7 +199,7 @@ public class AtyMessage extends BaseActivity {
                     messageList.clear();
                     for (int i = 0; i < result.length(); i++) {
                         JSONObject jj = result.optJSONObject(i);
-                        if(jj != null && "community".equals(jj.optString("type"))){
+                        if (jj != null && "community".equals(jj.optString("type"))) {
                             messageList.add(SystemMessage.CommunityMessage.fromJson(jj.optJSONObject("content")));
                         }
                     }

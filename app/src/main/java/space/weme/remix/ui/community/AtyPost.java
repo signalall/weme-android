@@ -4,10 +4,10 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.util.ArrayMap;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.EditText;
@@ -15,21 +15,20 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import me.imid.swipebacklayout.lib.SwipeBackLayout;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import space.weme.remix.R;
 import space.weme.remix.model.Post;
-import space.weme.remix.model.Reply;
+import space.weme.remix.model.PostComment;
+import space.weme.remix.service.PostService;
+import space.weme.remix.service.Services;
 import space.weme.remix.ui.base.SwipeActivity;
 import space.weme.remix.util.DimensionUtils;
 import space.weme.remix.util.LogUtils;
-import space.weme.remix.util.OkHttpUtils;
 import space.weme.remix.util.StrUtils;
 
 /**
@@ -50,7 +49,7 @@ public class AtyPost extends SwipeActivity {
     private int curPage = 1;
     private boolean canLoadMore = true;
 
-    private List<Reply> mReplyList;
+    private List<PostComment> mPostCommentList;
     private Post mPost;
 
     private PostAdapter mAdapter;
@@ -59,10 +58,11 @@ public class AtyPost extends SwipeActivity {
 
     private LinearLayout mChatView;
     private EditText mEditText;
-    private TextView mCommitText;
+    private TextView mCommentText;
     private ImageView mAddImage;
 
     private TextView tvDelete;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,7 +80,7 @@ public class AtyPost extends SwipeActivity {
 
         mChatView = (LinearLayout) findViewById(R.id.chat_view_holder);
         mEditText = (EditText) findViewById(R.id.activity_post_editor);
-        mCommitText = (TextView) findViewById(R.id.activity_post_commit);
+        mCommentText = (TextView) findViewById(R.id.activity_post_commit);
         mAddImage = (ImageView) findViewById(R.id.activity_post_add_image);
 
         RecyclerView mRecyclerView = (RecyclerView) findViewById(R.id.post_detail_recycler_view);
@@ -94,7 +94,6 @@ public class AtyPost extends SwipeActivity {
                 int visibleItemCount = recyclerView.getChildCount();
                 int totalItemCount = layoutManager.getItemCount();
                 int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
-
                 if (!isLoading && (totalItemCount - visibleItemCount)
                         <= (firstVisibleItem + 2) && canLoadMore) {
                     LogUtils.i(TAG, "scroll to end  load page " + (curPage + 1));
@@ -102,7 +101,6 @@ public class AtyPost extends SwipeActivity {
                 }
             }
         });
-
         mRecyclerView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -114,38 +112,33 @@ public class AtyPost extends SwipeActivity {
             }
         });
         mAdapter = new PostAdapter(this);
-
-        mReplyList = new ArrayList<>();
-        mAdapter.setReplyList(mReplyList);
+        mPostCommentList = new ArrayList<>();
+        mAdapter.setReplyList(mPostCommentList);
         mRecyclerView.setAdapter(mAdapter);
         refreshAll();
     }
 
-    private void refreshAll(){
-        mReplyList.clear();
-        ArrayMap<String,String> param = new ArrayMap<>();
-        param.put("token", StrUtils.token());
-        param.put("postid", mPostID);
-        OkHttpUtils.post(StrUtils.GET_POST_DETAIL, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
-            @Override
-            public void onResponse(String s) {
-                LogUtils.i(TAG, s);
-                JSONObject j = OkHttpUtils.parseJSON(AtyPost.this, s);
-                if (j == null) {
-                    return;
-                }
-                JSONObject result = j.optJSONObject("result");
-                mPost = Post.fromJSON(result);
-                if(TextUtils.equals(mPost.userId,StrUtils.id())){
-                    tvDelete.setVisibility(View.VISIBLE);
-                    tvDelete.setOnClickListener(deleteListener);
-                }else{
-                    tvDelete.setVisibility(View.GONE);
-                }
-                mAdapter.setPost(mPost);
-                mAdapter.notifyDataSetChanged();
-            }
-        });
+    private void refreshAll() {
+        mPostCommentList.clear();
+        Services.postService()
+                .getPostDetail(new PostService.GetPostDetail(StrUtils.token(), mPostID))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(post -> {
+                    if (post.getResult() == null) {
+                        return;
+                    }
+                    mPost = post.getResult();
+                    if (TextUtils.equals(mPost.getUserId(), StrUtils.id())) {
+                        tvDelete.setVisibility(View.VISIBLE);
+                        tvDelete.setOnClickListener(deleteListener);
+                    } else {
+                        tvDelete.setVisibility(View.GONE);
+                    }
+                    mAdapter.setPost(mPost);
+                    mAdapter.notifyDataSetChanged();
+                }, ex -> {
+                });
         loadPage(1);
         mChatView.setVisibility(View.INVISIBLE);
         canLoadMore = true;
@@ -156,80 +149,61 @@ public class AtyPost extends SwipeActivity {
         public void onClick(View v) {
             final ProgressDialog progressDialog = new ProgressDialog(AtyPost.this);
             progressDialog.show();
-            ArrayMap<String,String> map = new ArrayMap<>();
-            map.put("token",StrUtils.token());
-            map.put("postid",mPostID);
-            OkHttpUtils.post(StrUtils.DELETE_POST_URL, map, TAG, new OkHttpUtils.SimpleOkCallBack() {
-                @Override
-                public void onResponse(String s) {
-                    progressDialog.dismiss();
-                    JSONObject j = OkHttpUtils.parseJSON(AtyPost.this,s);
-                    if(j == null) return;
-                    finish();
-                }
-
-                @Override
-                public void onFailure(IOException e) {
-                    progressDialog.dismiss();
-                }
-            });
+            Services.postService()
+                    .deletePost(new PostService.DeletePost(StrUtils.token(), mPostID))
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(resp -> {
+                        Log.d(TAG, "deletePost: " + resp.toString());
+                        progressDialog.dismiss();
+                        finish();
+                    }, ex -> {
+                        progressDialog.dismiss();
+                    });
         }
     };
 
-    private void loadPage(final int page){
-        ArrayMap<String,String> param = new ArrayMap<>();
-        param.put("token",StrUtils.token());
-        param.put("postid",mPostID);
-        param.put("page", page + "");
+    private void loadPage(final int page) {
         beforeLoadPage(page);
         curPage = page;
-        OkHttpUtils.post(StrUtils.GET_POST_COMMIT, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
-            @Override
-            public void onFailure(IOException e) {
-                afterLoadPage(page);
-            }
-
-            @Override
-            public void onResponse(String s) {
-                LogUtils.i(TAG, s);
-                afterLoadPage(page);
-                JSONObject j = OkHttpUtils.parseJSON(AtyPost.this, s);
-                if (j == null) {
-                    return;
-                }
-                JSONArray array = j.optJSONArray("result");
-                if (array == null) {
-                    return;
-                }
-                int size = array.length();
-                if(size==0){
-                    canLoadMore = false;
-                    return;
-                }
-                int previousCount = mReplyList.size();
-                for (int i = 0; i < array.length(); i++) {
-                    mReplyList.add(Reply.fromJSON(array.optJSONObject(i)));
-                }
-                if(page==1){
-                    mAdapter.notifyDataSetChanged();
-                }else {
-                    mAdapter.notifyItemRangeInserted(previousCount, array.length());
-                }
-            }
-        });
+        Services.postService()
+                .getPostComment(new PostService.GetPostComment(StrUtils.token(), mPostID, page + ""))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "getPostComment: " + resp.toString());
+                    afterLoadPage(page);
+                    List<PostComment> comments = resp.getResult();
+                    if (comments == null || comments.isEmpty()) {
+                        canLoadMore = false;
+                        return;
+                    }
+                    int previousCount = mPostCommentList.size();
+                    mPostCommentList.addAll(comments);
+                    if (page == 1) {
+                        mAdapter.notifyDataSetChanged();
+                    } else {
+                        mAdapter.notifyItemRangeInserted(previousCount, comments.size());
+                    }
+                }, ex -> {
+                    Log.e(TAG, "getPostComment: " + ex.getMessage());
+                    afterLoadPage(page);
+                });
     }
-    private void beforeLoadPage(int page){
+
+    private void beforeLoadPage(int page) {
         isLoading = true;
-        if(page!=1){
-            mReplyList.add(null);
-            mAdapter.notifyItemInserted(mReplyList.size()+1);
+        if (page != 1) {
+            mPostCommentList.add(null);
+            mAdapter.notifyItemInserted(mPostCommentList.size() + 1);
         }
     }
-    private void afterLoadPage(int page){
+
+    private void afterLoadPage(int page) {
         isLoading = false;
-        if(page!=1){
-            mReplyList.remove(mReplyList.size() - 1);
-            mAdapter.notifyItemRemoved(mReplyList.size() + 1);
+        if (page != 1) {
+            mPostCommentList.remove(mPostCommentList.size() - 1);
+            mAdapter.notifyItemRemoved(mPostCommentList.size() + 1);
         }
     }
 
@@ -239,7 +213,10 @@ public class AtyPost extends SwipeActivity {
         return TAG;
     }
 
-    void commitPost(){
+    /**
+     * 评价Post
+     */
+    void commentToPost() {
         mChatView.setVisibility(View.VISIBLE);
         mAddImage.setVisibility(View.VISIBLE);
         mEditText.setText("");
@@ -253,86 +230,71 @@ public class AtyPost extends SwipeActivity {
                 startActivityForResult(i, REPLY_CODE);
             }
         });
-        mCommitText.setOnClickListener(new View.OnClickListener() {
+        mCommentText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(mEditText.getText().length() == 0){
+                if (mEditText.getText().length() == 0) {
                     return;
                 }
-                ArrayMap<String,String> param = new ArrayMap<>();
-                param.put("token",StrUtils.token());
-                param.put("body",mEditText.getText().toString());
-                param.put("postid",mPostID);
-                mProgressDialog = ProgressDialog.show(AtyPost.this, null, getResources().getString(R.string.committing));
-                OkHttpUtils.post(StrUtils.COMMENT_TO_POST_URL,param,TAG,new OkHttpUtils.SimpleOkCallBack(){
-                    @Override
-                    public void onFailure(IOException e) {
-                        mProgressDialog.dismiss();
-                    }
-
-                    @Override
-                    public void onResponse(String s) {
-                        mProgressDialog.dismiss();
-                        LogUtils.i(TAG,s);
-                        JSONObject j = OkHttpUtils.parseJSON(AtyPost.this,s);
-                        if(j == null){
-                            return;
-                        }
-                        clearChatView();
-                        refreshAll();
-                    }
-                });
+                mProgressDialog = ProgressDialog.show(AtyPost.this, null, getResources().getString(R.string.commenting));
+                Services.postService()
+                        .commentToPost(new PostService.CommentToPost(StrUtils.token(), mEditText.getText().toString(), mPostID))
+                        .subscribe(resp -> {
+                            Log.d(TAG, "commentToPost: " + resp.toString());
+                            mProgressDialog.dismiss();
+                            LogUtils.i(TAG, resp.toString());
+                            clearChatView();
+                            refreshAll();
+                        }, ex -> {
+                            mProgressDialog.dismiss();
+                        });
             }
         });
     }
-    void commitReply(final Reply reply){
+
+    /**
+     * 评价Comment
+     *
+     * @param postComment
+     */
+    void commentToComment(final PostComment postComment) {
         mChatView.setVisibility(View.VISIBLE);
         mAddImage.setVisibility(View.GONE);
-        mEditText.setHint(getString(R.string.commit) + reply.name + ":");
+        mEditText.setHint(getString(R.string.comment) + postComment.getName() + ":");
         mEditText.setText("");
-        mCommitText.setOnClickListener(new View.OnClickListener() {
+        mCommentText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(mEditText.getText().length()==0){
+                if (mEditText.getText().length() == 0) {
                     return;
                 }
-                ArrayMap<String,String> map = new ArrayMap<>();
-                map.put("token",StrUtils.token());
-                map.put("body",mEditText.getText().toString());
-                map.put("destcommentid", reply.id);
-                mProgressDialog = ProgressDialog.show(AtyPost.this, null, getResources().getString(R.string.committing));
-                OkHttpUtils.post(StrUtils.COMMENT_TO_COMMENT_URL,map,TAG,new OkHttpUtils.SimpleOkCallBack(){
-                    @Override
-                    public void onFailure(IOException e) {
-                        mProgressDialog.dismiss();
-                    }
-
-                    @Override
-                    public void onResponse(String s) {
-                        mProgressDialog.dismiss();
-                        LogUtils.i(TAG,s);
-                        JSONObject j = OkHttpUtils.parseJSON(AtyPost.this,s);
-                        if(j == null){
-                            return;
-                        }
-                        clearChatView();
-                        refreshAll();
-                    }
-                });
+                mProgressDialog = ProgressDialog.show(AtyPost.this, null, getResources().getString(R.string.commenting));
+                Services.postService()
+                        .commentToComment(new PostService.CommentToComment(StrUtils.token(), mEditText.getText().toString(), postComment.getId()))
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(resp -> {
+                            Log.d(TAG, "commentToComment: " + resp.toString());
+                            mProgressDialog.dismiss();
+                            clearChatView();
+                            refreshAll();
+                        }, ex -> {
+                            mProgressDialog.dismiss();
+                        });
             }
         });
     }
 
-    private void clearChatView(){
+    private void clearChatView() {
         mChatView.setVisibility(View.GONE);
         mEditText.setText("");
-        mCommitText.setOnClickListener(null);
+        mCommentText.setOnClickListener(null);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REPLY_CODE&&resultCode == Activity.RESULT_OK){
+        if (requestCode == REPLY_CODE && resultCode == Activity.RESULT_OK) {
             refreshAll();
         }
     }

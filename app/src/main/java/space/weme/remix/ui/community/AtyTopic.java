@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.util.ArrayMap;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -16,20 +15,20 @@ import android.widget.TextView;
 
 import com.facebook.drawee.view.SimpleDraweeView;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import me.imid.swipebacklayout.lib.SwipeBackLayout;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import space.weme.remix.R;
 import space.weme.remix.model.Post;
-import space.weme.remix.model.Topic;
+import space.weme.remix.model.PostTopic;
+import space.weme.remix.service.PostService;
+import space.weme.remix.service.Services;
+import space.weme.remix.service.TopicService;
 import space.weme.remix.ui.base.SwipeActivity;
 import space.weme.remix.util.DimensionUtils;
-import space.weme.remix.util.LogUtils;
-import space.weme.remix.util.OkHttpUtils;
 import space.weme.remix.util.StrUtils;
 
 /**
@@ -43,7 +42,7 @@ public class AtyTopic extends SwipeActivity {
     private static final int REQUEST_NEW_POST = 0xef;
 
     private String mTopicId;
-    private Topic mTopic;
+    private PostTopic mPostTopic;
     private ArrayList<Post> mPostList;
     private boolean isRefreshing = false;
     private boolean isLoading = false;
@@ -67,7 +66,7 @@ public class AtyTopic extends SwipeActivity {
 
         AppBarLayout mBarLayout = (AppBarLayout) findViewById(R.id.appbar);
         int width = DimensionUtils.getDisplay().widthPixels;
-        CoordinatorLayout.LayoutParams params = new CoordinatorLayout.LayoutParams(width,width/2);
+        CoordinatorLayout.LayoutParams params = new CoordinatorLayout.LayoutParams(width, width / 2);
         mBarLayout.setLayoutParams(params);
 
         mImage = (SimpleDraweeView) findViewById(R.id.aty_topic_title_image);
@@ -80,7 +79,7 @@ public class AtyTopic extends SwipeActivity {
             @Override
             public void onClick(View view) {
                 Intent i = new Intent(AtyTopic.this, AtyPostNew.class);
-                i.putExtra(AtyPostNew.INTENT_ID,mTopicId);
+                i.putExtra(AtyPostNew.INTENT_ID, mTopicId);
                 startActivityForResult(i, REQUEST_NEW_POST);
             }
         });
@@ -114,107 +113,94 @@ public class AtyTopic extends SwipeActivity {
                 if (isRefreshing) {
                     Log.d(TAG, "ignore manually update!");
                 } else {
-                    loadPage(1,true);
+                    loadPage(1, true);
                 }
             }
         });
         loadAll();
     }
 
-    private void loadAll(){
-        ArrayMap<String,String> param = new ArrayMap<>();
-        param.put("token", StrUtils.token());
-        param.put("topicid", mTopicId);
-        OkHttpUtils.post(StrUtils.GET_TOPIC_INFO, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
-            @Override
-            public void onResponse(String s) {
-                //LogUtils.i(TAG, s);
-                JSONObject j = OkHttpUtils.parseJSON(AtyTopic.this, s);
-                if (j == null) {
-                    return;
-                }
-                JSONObject object = j.optJSONObject("result");
-                mTopic = Topic.fromJson(object);
-                mImage.setImageURI(Uri.parse(mTopic.imageurl));
-                mTvSlogan.setText(mTopic.slogan);
-                mTvTheme.setText(mTopic.theme);
-                mAdapter.setTopic(mTopic);
-            }
-        });
+    private void loadAll() {
+        Log.d(TAG, "loadAll");
+        Services.topicService()
+                .getTopicInfo(new TopicService.GetTopicInfo(StrUtils.token(), mTopicId))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "getTopicInfo: " + resp.toString());
+                    PostTopic postTopic = resp.getResult();
+                    mPostTopic = postTopic;
+                    mImage.setImageURI(Uri.parse(mPostTopic.imageurl));
+                    mTvSlogan.setText(mPostTopic.slogan);
+                    mTvTheme.setText(mPostTopic.theme);
+                    mAdapter.setTopic(mPostTopic);
+                }, ex -> {
+                    Log.e(TAG, ex.getMessage());
+                });
         loadPage(1, true);
     }
 
-    private void beforeLoadPage(boolean replace){
-        if(replace){
+    private void beforeLoadPage(boolean replace) {
+        if (replace) {
             isRefreshing = true;
             curPage = 1;
-        }else{
+        } else {
             isLoading = true;
             mPostList.add(null);
             mAdapter.notifyItemInserted(mPostList.size());
         }
     }
-    private void afterLoadPage(boolean replace){
-        if(replace){
+
+    private void afterLoadPage(boolean replace) {
+        if (replace) {
             mSwipeRefreshLayout.setRefreshing(false);
             isRefreshing = false;
-        }else{
+        } else {
             isLoading = false;
-            mPostList.remove(mPostList.size()-1);
+            mPostList.remove(mPostList.size() - 1);
             mAdapter.notifyItemRemoved(mPostList.size());
         }
     }
 
-    private void loadPage(int page){
-        loadPage(page,false);
+    private void loadPage(int page) {
+        loadPage(page, false);
     }
-    private void loadPage(int page, final boolean replace){
-        ArrayMap<String,String> param = new ArrayMap<>();
-        param.put("token", StrUtils.token());
-        param.put("topicid",mTopicId);
-        param.put("page", page + "");
-        beforeLoadPage(replace);
-        OkHttpUtils.post(StrUtils.GET_POST_LIST,param,TAG,new OkHttpUtils.SimpleOkCallBack(){
-            @Override
-            public void onFailure(IOException e) {
-                afterLoadPage(replace);
-            }
 
-            @Override
-            public void onResponse(String res) {
-                afterLoadPage(replace);
-                LogUtils.i(TAG,res);
-                JSONObject j = OkHttpUtils.parseJSON(AtyTopic.this,res);
-                if(j==null){
-                    return;
-                }
-                if(replace){
-                    canLoadMore = true;
-                }else{
-                    curPage++;
-                }
-                int previousCount = mPostList.size();
-                JSONArray result = j.optJSONArray("result");
-                int size = result.length();
-                if(replace){
-                    mPostList.clear();
-
-                }
-                if(size==0){
-                    canLoadMore = false;
-                    return;
-                }
-                for(int i = 0; i<result.length(); i++){
-                    mPostList.add(Post.fromJSON(result.optJSONObject(i)));
-                }
-                mAdapter.setPostList(mPostList);
-                if(replace){
-                    mAdapter.notifyDataSetChanged();
-                }else {
-                    mAdapter.notifyItemRangeInserted(previousCount, size);
-                }
-            }
-        });
+    private void loadPage(int page, final boolean replace) {
+        // beforeLoadPage(replace);
+        Services.postService()
+                .getPostList(new PostService.GetPostList(StrUtils.token(), mTopicId, page + ""))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "getPostList: " + resp.toString());
+                    List<Post> posts = resp.getResult();
+                    afterLoadPage(replace);
+                    if (replace) {
+                        canLoadMore = true;
+                    } else {
+                        curPage++;
+                    }
+                    int previousCount = mPostList.size();
+                    int size = posts.size();
+                    if (replace) {
+                        mPostList.clear();
+                    }
+                    if (size == 0) {
+                        canLoadMore = false;
+                        return;
+                    }
+                    mPostList.addAll(posts);
+                    mAdapter.setPostList(mPostList);
+                    if (replace) {
+                        mAdapter.notifyDataSetChanged();
+                    } else {
+                        mAdapter.notifyItemRangeInserted(previousCount, size);
+                    }
+                }, ex -> {
+                    Log.e(TAG, "getPostList: " + ex.getMessage());
+                    afterLoadPage(replace);
+                });
     }
 
 
@@ -226,7 +212,7 @@ public class AtyTopic extends SwipeActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == REQUEST_NEW_POST && resultCode == RESULT_OK){
+        if (requestCode == REQUEST_NEW_POST && resultCode == RESULT_OK) {
             loadAll();
         }
     }
