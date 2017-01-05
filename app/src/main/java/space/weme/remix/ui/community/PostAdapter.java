@@ -43,6 +43,7 @@ import space.weme.remix.widgt.GridLayout;
 /**
  * Created by Liujilong on 2016/1/30.
  * liujilong.me@gmail.com
+ * 评论列表的Adapter
  */
 public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     Context mContext;

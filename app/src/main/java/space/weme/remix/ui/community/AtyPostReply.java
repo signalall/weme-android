@@ -37,6 +37,7 @@ import space.weme.remix.widgt.GridLayout;
 /**
  * Created by Liujilong on 2016/1/31.
  * liujilong.me@gmail.com
+ * 回复Post
  */
 public class AtyPostReply extends AtyImage {
     private static final String TAG = "AtyPostReply";

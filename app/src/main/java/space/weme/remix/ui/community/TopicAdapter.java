@@ -32,6 +32,7 @@ import space.weme.remix.widgt.GridLayout;
 /**
  * Created by Liujilong on 2016/1/28.
  * liujilong.me@gmail.com
+ * Post列表的Adapter
  */
 public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Context mContext;

@@ -36,6 +36,7 @@ import space.weme.remix.util.StrUtils;
 /**
  * Created by Liujilong on 2016/1/30.
  * liujilong.me@gmail.com
+ * 每个Post的具体内容
  */
 public class AtyPost extends SwipeActivity {
     private static final String TAG = "AtyPost";
