@@ -14,6 +14,9 @@ import android.widget.TextView;
 import com.amap.api.services.core.PoiItem;
 import com.facebook.drawee.view.SimpleDraweeView;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import me.nereo.multi_image_selector.MultiImageSelectorActivity;
 import space.weme.remix.R;
 import space.weme.remix.ui.base.BaseFragment;
@@ -29,18 +32,30 @@ public class FgtAddFood extends BaseFragment {
 
     AtyAddFood aty;
 
+    @BindView(R.id.fgt_add_food_picture)
     SimpleDraweeView pictureDrawee;
+
+    @BindView(R.id.edit_text_food_name)
     EditText etTitle;
+
+    @BindView(R.id.edit_text_comment)
     EditText etComment;
+
+    @BindView(R.id.fgt_add_food_location)
     LinearLayout llLocation;
+
+    @BindView(R.id.fgt_add_food_price)
     LinearLayout llPrice;
+
+    @BindView(R.id.fgt_add_text_location)
     TextView tvLocation;
+
+    @BindView(R.id.fgt_add_text_price)
     TextView tvPrice;
 
     String price;
     boolean pictureChosen = false;
     PoiItem poiItem;
-
 
     public static FgtAddFood newInstance() {
         Bundle args = new Bundle();
@@ -49,67 +64,52 @@ public class FgtAddFood extends BaseFragment {
         return fragment;
     }
 
+    @OnClick(R.id.fgt_add_food_picture)
+    public void onPictureDraweeClick() {
+        Intent intent = new Intent(aty, MultiImageSelectorActivity.class);
+        intent.putExtra(MultiImageSelectorActivity.EXTRA_SHOW_CAMERA, true);
+        intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_COUNT, 1);
+        intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_MODE, MultiImageSelectorActivity.MODE_SINGLE);
+        aty.startActivityForResult(intent, AtyAddFood.REQUEST_IMAGE);
+    }
+
+    @OnClick(R.id.fgt_add_food_price)
+    public void onPriceClick() {
+        aty.switchToFragment(aty.fgtPrice);
+    }
+
+    @OnClick(R.id.fgt_add_food_location)
+    public void onLocationClick() {
+        aty.switchToFragment(aty.fgtMap);
+    }
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fgt_add_food,container,false);
-        pictureDrawee = (SimpleDraweeView) v.findViewById(R.id.fgt_add_food_picture);
-        etTitle = (EditText) v.findViewById(R.id.edit_text_food_name);
-        etComment = (EditText) v.findViewById(R.id.edit_text_comment);
-        llLocation = (LinearLayout) v.findViewById(R.id.fgt_add_food_location);
-        llPrice = (LinearLayout) v.findViewById(R.id.fgt_add_food_price);
-        tvLocation = (TextView) v.findViewById(R.id.fgt_add_text_location);
-        tvPrice = (TextView) v.findViewById(R.id.fgt_add_text_price);
-
+        View v = inflater.inflate(R.layout.fgt_add_food, container, false);
+        ButterKnife.bind(this, v);
         aty = (AtyAddFood) getActivity();
-
-        pictureDrawee.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(aty, MultiImageSelectorActivity.class);
-                intent.putExtra(MultiImageSelectorActivity.EXTRA_SHOW_CAMERA, true);
-                intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_COUNT, 1);
-                intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_MODE, MultiImageSelectorActivity.MODE_SINGLE);
-                aty.startActivityForResult(intent, AtyAddFood.REQUEST_IMAGE);
-            }
-        });
-
-        llPrice.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                aty.switchToFragment(aty.fgtPrice);
-            }
-        });
-
-        llLocation.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                aty.switchToFragment(aty.fgtMap);
-            }
-        });
-
         return v;
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        if(price != null) {
+        if (price != null) {
             tvPrice.setText(price);
         }
-        if(pictureChosen){
+        if (pictureChosen) {
             int width = pictureDrawee.getWidth();
             int height = pictureDrawee.getHeight();
             BitmapUtils.showResizedPicture(pictureDrawee, Uri.parse("file://" + StrUtils.cropFilePath), width, height);
         }
-        if(poiItem != null){
+        if (poiItem != null) {
             String location = poiItem.getTitle() + poiItem.getSnippet();
             tvLocation.setText(location);
         }
-
     }
 
-    void setPrice(String price){
+    void setPrice(String price) {
         this.price = price;
     }
 

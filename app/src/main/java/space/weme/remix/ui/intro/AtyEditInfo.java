@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.v4.util.ArrayMap;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -25,17 +26,21 @@ import com.facebook.drawee.backends.pipeline.Fresco;
 import com.facebook.drawee.generic.RoundingParams;
 import com.facebook.drawee.view.SimpleDraweeView;
 import com.facebook.imagepipeline.core.ImagePipeline;
-
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.google.gson.Gson;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import me.nereo.multi_image_selector.MultiImageSelectorActivity;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import space.weme.remix.R;
-import space.weme.remix.model.User;
+import space.weme.remix.service.Services;
+import space.weme.remix.service.UserService;
 import space.weme.remix.ui.base.BaseActivity;
 import space.weme.remix.ui.community.DatePickerFragment;
 import space.weme.remix.util.LogUtils;
@@ -53,33 +58,86 @@ public class AtyEditInfo extends BaseActivity {
     public static final String INTENT_EDIT = "intent_edit";
     public static final String INTENT_INFO = "intent_info";
     private boolean mEdit;
-    private User mUser;
+    private UserService.GetProfileByUserIdResp mUser;
     //private boolean
 
     private static final int REQUEST_IMAGE = 0xef;
     private static final int REQUEST_CITY = 0xff;
     private final int REQUEST_CROP = 400;
 
-
-
     private String mAvatarPath;
 
     private String education;
 
+    @BindView(R.id.aty_editinfo_avatar)
     SimpleDraweeView mDrawAvatar;
+
+    @BindView(R.id.aty_editinfo_edittext_name)
     EditText etName;
+
+    @BindView(R.id.aty_editinfo_birth)
     TextView tvBirth;
+
+    @BindView(R.id.aty_editinfo_phone)
     EditText etPhone;
+
+    @BindView(R.id.aty_editinfo_school)
     TextView tvSchool;
+
+    @BindView(R.id.aty_editinfo_education)
     Spinner spEducation;
+
+    @BindView(R.id.aty_editinfo_major)
     EditText etMajor;
+
+    @BindView(R.id.aty_editinfo_wechat)
     EditText etWeChat;
+
+    @BindView(R.id.aty_editinfo_qq)
     EditText etQQ;
+
+    @BindView(R.id.aty_editinfo_home)
     EditText etHome;
+
+    @BindView(R.id.aty_editinfo_commit)
     TextView etCommit;
+
+    @BindView(R.id.aty_editinfo_switch_gender)
     WSwitch wSwitch;
 
     ProgressDialog mProgressDialog;
+
+    @OnClick(R.id.aty_editinfo_avatar)
+    public void onAvatarClick() {
+        Intent intent = new Intent(AtyEditInfo.this, MultiImageSelectorActivity.class);
+        intent.putExtra(MultiImageSelectorActivity.EXTRA_SHOW_CAMERA, true);
+        intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_COUNT, 1);
+        intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_MODE, MultiImageSelectorActivity.MODE_SINGLE);
+        startActivityForResult(intent, REQUEST_IMAGE);
+    }
+
+    @OnClick(R.id.aty_editinfo_birth)
+    public void onBirthClick() {
+        final DatePickerFragment datePicker = new DatePickerFragment();
+        datePicker.setDateSetListener(new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+                tvBirth.setText(String.format("%4d-%02d-%02d", year, monthOfYear + 1, dayOfMonth));
+            }
+        });
+        datePicker.show(getFragmentManager(), "DatePicker");
+    }
+
+    @OnClick(R.id.aty_editinfo_school)
+    public void onSchoolClick() {
+        Intent i = new Intent(AtyEditInfo.this, AtySearchCity.class);
+        startActivityForResult(i, REQUEST_CITY);
+    }
+
+    @OnClick(R.id.aty_editinfo_commit)
+    public void onCommitClick() {
+        commit();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,85 +145,42 @@ public class AtyEditInfo extends BaseActivity {
         setContentView(R.layout.aty_editinfo);
         Toolbar toolbar = (Toolbar) findViewById(R.id.aty_editinfo_toolbar);
         toolbar.setTitleTextColor(Color.WHITE);
+
+        ButterKnife.bind(this);
         bindViews();
 
-        mEdit = getIntent().getBooleanExtra(INTENT_EDIT,false);
-        if(mEdit){
+        mEdit = getIntent().getBooleanExtra(INTENT_EDIT, false);
+        if (mEdit) {
             String info = getIntent().getStringExtra(INTENT_INFO);
-            if(info!=null) {
-                try {
-                    mUser = User.fromJSON(new JSONObject(info));
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+            if (info != null) {
+                mUser = (new Gson()).fromJson(info, UserService.GetProfileByUserIdResp.class);
                 showUserInfo();
-            }else {
-                ArrayMap<String, String> param = new ArrayMap<>();
-                param.put("token", StrUtils.token());
-                param.put("id", StrUtils.id());
-                OkHttpUtils.post(StrUtils.GET_PROFILE_BY_ID, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
-                    @Override
-                    public void onResponse(String s) {
-                        //LogUtils.i(TAG, s);
-                        JSONObject j = OkHttpUtils.parseJSON(AtyEditInfo.this, s);
-                        if (j == null) {
-                            finish();
-                            return;
-                        }
-                        mUser = User.fromJSON(j);
-                        showUserInfo();
-                    }
-                });
+            } else {
+                String userId = StrUtils.id();
+                String token = StrUtils.token();
+                Services.userService()
+                        .getProfileByUserId(new UserService.GetProfileByUserId(token, userId))
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(resp -> {
+                            Log.d(TAG, "getProfileByUserId: " + resp);
+                            if (resp.getId() == 0) {
+                                finish();
+                            } else {
+                                mUser = resp;
+                                showUserInfo();
+                            }
+                        }, ex -> {
+                            Log.e(TAG, "getProfileByUserId: " + ex.toString());
+                            Toast.makeText(AtyEditInfo.this,
+                                    R.string.network_error,
+                                    Toast.LENGTH_SHORT).show();
+                        });
             }
         }
     }
 
-    private void bindViews(){
-        mDrawAvatar = (SimpleDraweeView) findViewById(R.id.aty_editinfo_avatar);
-        etName = (EditText) findViewById(R.id.aty_editinfo_edittext_name);
-        wSwitch = (WSwitch) findViewById(R.id.aty_editinfo_switch_gender);
-        tvBirth = (TextView) findViewById(R.id.aty_editinfo_birth);
-        etPhone = (EditText) findViewById(R.id.aty_editinfo_phone);
-        tvSchool = (TextView) findViewById(R.id.aty_editinfo_school);
-        spEducation = (Spinner) findViewById(R.id.aty_editinfo_education);
-        etMajor = (EditText) findViewById(R.id.aty_editinfo_major);
-        etWeChat = (EditText) findViewById(R.id.aty_editinfo_wechat);
-        etQQ = (EditText) findViewById(R.id.aty_editinfo_qq);
-        etHome = (EditText) findViewById(R.id.aty_editinfo_home);
-        etCommit = (TextView) findViewById(R.id.aty_editinfo_commit);
-
-
-        mDrawAvatar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(AtyEditInfo.this, MultiImageSelectorActivity.class);
-                intent.putExtra(MultiImageSelectorActivity.EXTRA_SHOW_CAMERA, true);
-                intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_COUNT, 1);
-                intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_MODE, MultiImageSelectorActivity.MODE_SINGLE);
-                startActivityForResult(intent, REQUEST_IMAGE);
-            }
-        });
-        tvBirth.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                final DatePickerFragment datePicker = new DatePickerFragment();
-                datePicker.setDateSetListener(new DatePickerDialog.OnDateSetListener() {
-                    @Override
-                    public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
-                        tvBirth.setText(String.format("%4d-%02d-%02d", year, monthOfYear + 1, dayOfMonth));
-                    }
-                });
-                datePicker.show(getFragmentManager(), "DatePicker");
-            }
-        });
-
-        tvSchool.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent i = new Intent(AtyEditInfo.this, AtySearchCity.class);
-                startActivityForResult(i, REQUEST_CITY);
-            }
-        });
+    private void bindViews() {
 
         final String[] items = new String[]{
                 getString(R.string.please_choose_education),
@@ -190,26 +205,17 @@ public class AtyEditInfo extends BaseActivity {
                 education = null;
             }
         });
-
-        // todo choose home
-
-        etCommit.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                commit();
-            }
-        });
     }
 
-    private void showUserInfo(){
-        mDrawAvatar.setImageURI(Uri.parse(StrUtils.thumForID(mUser.ID + "")));
-        etName.setText(mUser.name);
-        boolean male = getResources().getString(R.string.male).equals(mUser.gender);
+    private void showUserInfo() {
+        mDrawAvatar.setImageURI(Uri.parse(StrUtils.thumForID(mUser.getId() + "")));
+        etName.setText(mUser.getName());
+        boolean male = getResources().getString(R.string.male).equals(mUser.getGender());
         wSwitch.setOn(male);
-        tvBirth.setText(mUser.birthday);
-        etPhone.setText(mUser.phone);
-        tvSchool.setText(mUser.school);
-        switch (mUser.degree) {
+        tvBirth.setText(mUser.getBirthday());
+        etPhone.setText(mUser.getPhone());
+        tvSchool.setText(mUser.getSchool());
+        switch (mUser.getDegree()) {
             case "本科":
                 spEducation.setSelection(1);
                 break;
@@ -220,78 +226,81 @@ public class AtyEditInfo extends BaseActivity {
                 spEducation.setSelection(3);
                 break;
         }
-        etMajor.setText(mUser.department);
-        etWeChat.setText(mUser.wechat);
-        etQQ.setText(mUser.qq);
-        etHome.setText(mUser.hometown);
+        etMajor.setText(mUser.getDepartment());
+        etWeChat.setText(mUser.getWechat());
+        etQQ.setText(mUser.getQq());
+        etHome.setText(mUser.getHometown());
     }
 
-    private void commit(){
+    private void commit() {
         //LogUtils.d(TAG, swGender.isChecked()+"");
-        if(etName.getText().toString().length()==0){
+        if (etName.getText().toString().length() == 0) {
             makeToast(R.string.name_not_empty);
             return;
         }
-        if(tvBirth.getText().toString().length()==0){
+        if (tvBirth.getText().toString().length() == 0) {
             makeToast(R.string.birth_not_empty);
             return;
         }
-        if(etPhone.getText().toString().length()==0){
+        if (etPhone.getText().toString().length() == 0) {
             makeToast(R.string.phone_not_empty);
             return;
         }
-        if(tvSchool.getText().toString().length()==0){
+        if (tvSchool.getText().toString().length() == 0) {
             makeToast(R.string.school_not_empty);
             return;
         }
-        if(education==null){
+        if (education == null) {
             makeToast(R.string.choose_degree);
             return;
         }
 
-        ArrayMap<String,String> param = new ArrayMap<>();
-        param.put("token", StrUtils.token());
-        param.put("name", etName.getText().toString());
-        param.put("birthday", tvBirth.getText().toString());
-        param.put("degree", education);
-        if(etMajor.getText().length()!=0){
-            param.put("department", etMajor.getText().toString());
-        }
-        param.put("gender", wSwitch.isOn() ? getResources().getString(R.string.male) : getResources().getString(R.string.female));
-        if(etHome.getText().length()!=0){
-            param.put("hometown",etHome.getText().toString());
-        }
-        param.put("phone", etPhone.getText().toString());
-        if(etQQ.getText().length()!=0){
-            param.put("qq",etQQ.getText().toString());
-        }
-        param.put("school", tvSchool.getText().toString());
-        if(etWeChat.getText().length()!=0){
-            param.put("wechat", etWeChat.getText().toString());
-        }
         mProgressDialog = ProgressDialog.show(AtyEditInfo.this, null, getResources().getString(R.string.commenting));
-        OkHttpUtils.post(StrUtils.EDIT_PROFILE_URL, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
-            @Override
-            public void onResponse(String s) {
-                LogUtils.i(TAG, s);
-                JSONObject j = OkHttpUtils.parseJSON(AtyEditInfo.this, s);
-                if (j == null) {
-                    return;
-                }
-                if (mAvatarPath == null) {
-                    uploadImageReturned();
-                } else {
-                    uploadAvatar();
-                }
-            }
-        });
+
+        String gender = (wSwitch.isOn() ? getResources().getString(R.string.male) : getResources().getString(R.string.female));
+        UserService.EditProfile ep = new UserService.EditProfile(
+                StrUtils.token(),
+                etName.getText().toString(),
+                tvBirth.getText().toString(),
+                education,
+                etMajor.getText().toString(),
+                gender,
+                etHome.getText().toString(),
+                etPhone.getText().toString(),
+                etQQ.getText().toString(),
+                tvSchool.getText().toString(),
+                etWeChat.getText().toString()
+        );
+        Services.userService()
+                .editProfile(ep)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "editProfile: " + resp.toString());
+                    mProgressDialog.dismiss();
+                    mProgressDialog = null;
+                    if ("successful".equals(resp.getState())) {
+                        if (mAvatarPath == null) {
+                            uploadImageReturned();
+                        } else {
+                            uploadAvatar();
+                        }
+                    }
+                }, ex -> {
+                    Log.e(TAG, "editProfile: " + ex.getMessage());
+                    mProgressDialog.dismiss();
+                    mProgressDialog = null;
+                    Toast.makeText(AtyEditInfo.this,
+                            R.string.network_error,
+                            Toast.LENGTH_SHORT).show();
+                });
     }
 
-    private void uploadAvatar(){
-        ArrayMap<String,String> p = new ArrayMap<>();
-        p.put("token",StrUtils.token());
-        p.put("type","0");
-        p.put("number","0");
+    private void uploadAvatar() {
+        ArrayMap<String, String> p = new ArrayMap<>();
+        p.put("token", StrUtils.token());
+        p.put("type", "0");
+        p.put("number", "0");
         OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, p, StrUtils.cropFilePath, StrUtils.MEDIA_TYPE_IMG, TAG, new OkHttpUtils.SimpleOkCallBack() {
             @Override
             public void onFailure(IOException e) {
@@ -300,23 +309,24 @@ public class AtyEditInfo extends BaseActivity {
 
             @Override
             public void onResponse(String s) {
-                if(mUser!=null) {
+                if (mUser != null) {
                     ImagePipeline imagePipeline = Fresco.getImagePipeline();
-                    imagePipeline.evictFromCache(Uri.parse(StrUtils.thumForID(mUser.ID + "")));
-                    imagePipeline.evictFromCache(Uri.parse(StrUtils.avatarForID(mUser.ID + "")));
-                    imagePipeline.evictFromCache(Uri.parse(StrUtils.cardForID(mUser.ID + "")));
+                    imagePipeline.evictFromCache(Uri.parse(StrUtils.thumForID(mUser.getId() + "")));
+                    imagePipeline.evictFromCache(Uri.parse(StrUtils.avatarForID(mUser.getId() + "")));
+                    imagePipeline.evictFromCache(Uri.parse(StrUtils.cardForID(mUser.getId() + "")));
                 }
                 uploadImageReturned();
             }
         });
     }
-    private void uploadImageReturned(){
-        SharedPreferences sp = getSharedPreferences(StrUtils.SP_USER,MODE_PRIVATE);
+
+    private void uploadImageReturned() {
+        SharedPreferences sp = getSharedPreferences(StrUtils.SP_USER, MODE_PRIVATE);
         String gender = wSwitch.isOn() ? getResources().getString(R.string.male) : getResources().getString(R.string.female);
-        sp.edit().putString(StrUtils.SP_USER_GENDER,gender).apply();
-        if(mEdit){
+        sp.edit().putString(StrUtils.SP_USER_GENDER, gender).apply();
+        if (mEdit) {
             finish();
-        }else {
+        } else {
             Intent i = new Intent(AtyEditInfo.this, AtyLogin.class);
             i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             i.putExtra(AtyLogin.INTENT_CLEAR, true);
@@ -324,24 +334,24 @@ public class AtyEditInfo extends BaseActivity {
         }
     }
 
-    private void makeToast(int string_id){
-        Toast.makeText(this, string_id,Toast.LENGTH_SHORT).show();
+    private void makeToast(int string_id) {
+        Toast.makeText(this, string_id, Toast.LENGTH_SHORT).show();
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if(resultCode != RESULT_OK){
+        if (resultCode != RESULT_OK) {
             return;
         }
-        if(requestCode == REQUEST_IMAGE){
-            List<String> paths=data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
+        if (requestCode == REQUEST_IMAGE) {
+            List<String> paths = data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
             mAvatarPath = paths.get(0);
             performCrop(mAvatarPath);
             //mDrawAvatar.setImageURI(Uri.parse("file://"+mAvatarPath));
-        }else if(requestCode == REQUEST_CITY){
+        } else if (requestCode == REQUEST_CITY) {
             String name = data.getStringExtra(AtySearchCity.INTENT_UNIVERSITY);
             tvSchool.setText(name);
-        }else if (requestCode == REQUEST_CROP){
+        } else if (requestCode == REQUEST_CROP) {
             Fresco.getImagePipeline().evictFromCache(Uri.parse("file://" + StrUtils.cropFilePath));
             RoundingParams roundingParams = RoundingParams.fromCornersRadius(5f);
             roundingParams.setRoundAsCircle(true);

@@ -15,6 +15,8 @@ import com.facebook.drawee.view.SimpleDraweeView;
 
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import space.weme.remix.R;
 import space.weme.remix.model.Message;
 import space.weme.remix.ui.AtyImage;
@@ -33,15 +35,15 @@ public class MessageDetailAdapter extends RecyclerView.Adapter<RecyclerView.View
     private View.OnClickListener mImageListener;
     private String sendId;
 
-    public MessageDetailAdapter(Context context, String id){
+    public MessageDetailAdapter(Context context, String id) {
         mContext = context;
         sendId = id;
         mAvatarListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String sendId = (String) v.getTag();
-                Intent i = new Intent(mContext,AtyInfo.class);
-                i.putExtra(AtyInfo.ID_INTENT,sendId);
+                Intent i = new Intent(mContext, AtyInfo.class);
+                i.putExtra(AtyInfo.ID_INTENT, sendId);
                 mContext.startActivity(i);
             }
         };
@@ -49,20 +51,20 @@ public class MessageDetailAdapter extends RecyclerView.Adapter<RecyclerView.View
             @Override
             public void onClick(View v) {
                 String sendId = (String) v.getTag();
-                Intent i = new Intent(mContext,AtyMessageReply.class);
+                Intent i = new Intent(mContext, AtyMessageReply.class);
                 i.putExtra(AtyMessageReply.INTENT_ID, sendId);
-                i.putExtra(AtyMessageReply.INTENT_REPLY,true);
-                ((Activity)mContext).startActivityForResult(i, AtyMessageDetail.REQUEST_CODE);
+                i.putExtra(AtyMessageReply.INTENT_REPLY, true);
+                ((Activity) mContext).startActivityForResult(i, AtyMessageDetail.REQUEST_CODE);
             }
         };
-        mImageListener = new View.OnClickListener(){
+        mImageListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String url = (String) v.getTag();
                 Intent i = new Intent(mContext, AtyImage.class);
-                i.putExtra(AtyImage.URL_INTENT,url);
+                i.putExtra(AtyImage.URL_INTENT, url);
                 mContext.startActivity(i);
-                ((android.app.Activity)mContext).overridePendingTransition(0,0);
+                ((android.app.Activity) mContext).overridePendingTransition(0, 0);
             }
         };
     }
@@ -73,31 +75,31 @@ public class MessageDetailAdapter extends RecyclerView.Adapter<RecyclerView.View
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(mContext).inflate(R.layout.aty_message_detail_cell,parent,false);
-        return new VH(v);
+        View v = LayoutInflater.from(mContext).inflate(R.layout.aty_message_detail_cell, parent, false);
+        return new ViewHolder(v);
     }
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-        VH vh = (VH) holder;
+        ViewHolder viewHolder = (ViewHolder) holder;
         Message m = messageList.get(position);
-        vh.avatar.setImageURI(Uri.parse(StrUtils.thumForID(m.sendId)));
-        vh.avatar.setTag(m.sendId);
-        vh.avatar.setOnClickListener(mAvatarListener);
-        vh.tvName.setText(m.name);
-        vh.tvText.setText(m.text);
-        vh.tvSchool.setText(m.school);
-        if(m.time!=null) {
-            vh.tvTime.setText(StrUtils.timeTransfer(m.time));
+        viewHolder.avatar.setImageURI(Uri.parse(StrUtils.thumForID(m.sendId)));
+        viewHolder.avatar.setTag(m.sendId);
+        viewHolder.avatar.setOnClickListener(mAvatarListener);
+        viewHolder.tvName.setText(m.name);
+        viewHolder.tvText.setText(m.text);
+        viewHolder.tvSchool.setText(m.school);
+        if (m.time != null) {
+            viewHolder.tvTime.setText(StrUtils.timeTransfer(m.time));
         }
-        if(!sendId.equals(m.sendId)){
-            vh.ivReply.setVisibility(View.GONE);
-        }else{
-            vh.ivReply.setVisibility(View.VISIBLE);
-            vh.ivReply.setTag(m.sendId);
-            vh.ivReply.setOnClickListener(mReplyListener);
+        if (!sendId.equals(m.sendId)) {
+            viewHolder.ivReply.setVisibility(View.GONE);
+        } else {
+            viewHolder.ivReply.setVisibility(View.VISIBLE);
+            viewHolder.ivReply.setTag(m.sendId);
+            viewHolder.ivReply.setOnClickListener(mReplyListener);
         }
-        vh.glImages.setImageLists(m.images,mImageListener);
+        viewHolder.glImages.setImageLists(m.images, mImageListener);
     }
 
     @Override
@@ -105,23 +107,32 @@ public class MessageDetailAdapter extends RecyclerView.Adapter<RecyclerView.View
         return messageList == null ? 0 : messageList.size();
     }
 
-    class VH extends RecyclerView.ViewHolder{
+    class ViewHolder extends RecyclerView.ViewHolder {
+
+        @BindView(R.id.aty_message_detail_cell_avatar)
         SimpleDraweeView avatar;
+
+        @BindView(R.id.aty_message_detail_cell_name)
         TextView tvName;
+
+        @BindView(R.id.aty_message_detail_cell_text)
         TextView tvText;
+
+        @BindView(R.id.aty_message_detail_cell_school)
         TextView tvSchool;
+
+        @BindView(R.id.aty_message_detail_cell_time)
         TextView tvTime;
+
+        @BindView(R.id.aty_message_detail_cell_reply)
         ImageView ivReply;
+
+        @BindView(R.id.aty_message_detail_cell_images)
         GridLayout glImages;
-        public VH(View view) {
+
+        public ViewHolder(View view) {
             super(view);
-            avatar = (SimpleDraweeView) view.findViewById(R.id.aty_message_detail_cell_avatar);
-            tvName = (TextView) view.findViewById(R.id.aty_message_detail_cell_name);
-            tvText = (TextView) view.findViewById(R.id.aty_message_detail_cell_text);
-            tvSchool = (TextView) view.findViewById(R.id.aty_message_detail_cell_school);
-            tvTime = (TextView) view.findViewById(R.id.aty_message_detail_cell_time);
-            ivReply = (ImageView) view.findViewById(R.id.aty_message_detail_cell_reply);
-            glImages = (GridLayout) view.findViewById(R.id.aty_message_detail_cell_images);
+            ButterKnife.bind(this, view);
             glImages.setNumInRow(3);
         }
     }

@@ -15,6 +15,7 @@ import android.view.ViewGroup;
 import android.widget.GridLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.facebook.drawee.view.SimpleDraweeView;
 
@@ -141,7 +142,11 @@ public class FgtCommunity extends BaseFragment {
                     isRefreshing = false;
                     addGridViews(mGridLayout, resp.getResult());
                 }, ex -> {
+                    Log.e(TAG, "getTopList: " + ex.toString());
                     isRefreshing = false;
+                    Toast.makeText(getActivity(),
+                            R.string.network_error,
+                            Toast.LENGTH_SHORT).show();
                 });
     }
 

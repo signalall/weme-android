@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import me.nereo.multi_image_selector.MultiImageSelectorActivity;
 import space.weme.remix.R;
 import space.weme.remix.ui.base.AtyImage;
@@ -38,10 +40,18 @@ public class AtyMessageReply extends AtyImage {
     public static final String INTENT_REPLY = "intent_reply";
     private String sendID;
 
+    @BindView(R.id.send)
     TextView mSend;
+
+    @BindView(R.id.main_editor)
     EditText mEditor;
+
     ProgressDialog mProgressDialog;
+
+    @BindView(R.id.add_image)
     SimpleDraweeView mDrawAddImage;
+
+    @BindView(R.id.select_image_view)
     GridLayout mImageGrids;
 
     private AtomicInteger mSendImageResponseNum;
@@ -50,27 +60,24 @@ public class AtyMessageReply extends AtyImage {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_message_reply);
+        ButterKnife.bind(this);
         sendID = getIntent().getStringExtra(INTENT_ID);
-        boolean reply = getIntent().getBooleanExtra(INTENT_REPLY,false);
+        boolean reply = getIntent().getBooleanExtra(INTENT_REPLY, false);
 
         TextView tvTitle = (TextView) findViewById(R.id.aty_message_reply_title);
-        if(reply){
+        if (reply) {
             tvTitle.setText(R.string.reply_message);
-        }else{
+        } else {
             tvTitle.setText(R.string.message);
         }
 
-        mDrawAddImage = (SimpleDraweeView) findViewById(R.id.add_image);
         mDrawAddImage.setImageURI(Uri.parse("res:/" + R.mipmap.add_image));
         mDrawAddImage.setOnClickListener(mListener);
-        mSend = (TextView) findViewById(R.id.send);
-        mEditor = (EditText) findViewById(R.id.main_editor);
-        mImageGrids = (GridLayout) findViewById(R.id.select_image_view);
 
         mSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(mEditor.getText().length()==0){
+                if (mEditor.getText().length() == 0) {
                     return;
                 }
                 reply();
@@ -80,13 +87,13 @@ public class AtyMessageReply extends AtyImage {
         mSendImageResponseNum = new AtomicInteger();
     }
 
-    private void reply(){
-        ArrayMap<String,String> param = new ArrayMap<>();
+    private void reply() {
+        ArrayMap<String, String> param = new ArrayMap<>();
         param.put("token", StrUtils.token());
-        param.put("text",mEditor.getText().toString());
+        param.put("text", mEditor.getText().toString());
         param.put("RecId", sendID);
         mProgressDialog = ProgressDialog.show(AtyMessageReply.this, null, getResources().getString(R.string.commenting));
-        OkHttpUtils.post(StrUtils.SEND_MESSAGE,param,TAG, new OkHttpUtils.SimpleOkCallBack(){
+        OkHttpUtils.post(StrUtils.SEND_MESSAGE, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
             @Override
             public void onFailure(IOException e) {
                 mProgressDialog.dismiss();
@@ -94,28 +101,28 @@ public class AtyMessageReply extends AtyImage {
 
             @Override
             public void onResponse(String s) {
-                LogUtils.i(TAG,s);
+                LogUtils.i(TAG, s);
                 JSONObject j = OkHttpUtils.parseJSON(AtyMessageReply.this, s);
-                if(j == null){
+                if (j == null) {
                     mProgressDialog.dismiss();
                     return;
                 }
-                if(mChosenPicturePathList.size()==0){
+                if (mChosenPicturePathList.size() == 0) {
                     setResult(RESULT_OK);
                     finish();
                     return;
                 }
                 String id = j.optString("id");
-                ArrayMap<String,String> p = new ArrayMap<>();
-                p.put("token",StrUtils.token());
-                p.put("type","-2");
-                p.put("messageid",id);
-                p.put("number",mChosenPicturePathList.size()+"");
+                ArrayMap<String, String> p = new ArrayMap<>();
+                p.put("token", StrUtils.token());
+                p.put("type", "-2");
+                p.put("messageid", id);
+                p.put("number", mChosenPicturePathList.size() + "");
                 mSendImageResponseNum.set(0);
-                for(int number = 0; number<mChosenPicturePathList.size(); number++){
+                for (int number = 0; number < mChosenPicturePathList.size(); number++) {
                     p.put("number", String.format("%d", number));
                     String path = mChosenPicturePathList.get(number);
-                    OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL,p,path,StrUtils.MEDIA_TYPE_IMG,TAG,new OkHttpUtils.SimpleOkCallBack(){
+                    OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, p, path, StrUtils.MEDIA_TYPE_IMG, TAG, new OkHttpUtils.SimpleOkCallBack() {
                         @Override
                         public void onFailure(IOException e) {
                             uploadImageReturned();
@@ -131,9 +138,9 @@ public class AtyMessageReply extends AtyImage {
         });
     }
 
-    private void uploadImageReturned(){
+    private void uploadImageReturned() {
         int num = mSendImageResponseNum.incrementAndGet();
-        if(num == mChosenPicturePathList.size()){
+        if (num == mChosenPicturePathList.size()) {
             setResult(RESULT_OK);
             finish();
         }
@@ -142,19 +149,19 @@ public class AtyMessageReply extends AtyImage {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_IMAGE && resultCode == Activity.RESULT_OK){
-            List<String> paths=data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
+        if (requestCode == REQUEST_IMAGE && resultCode == Activity.RESULT_OK) {
+            List<String> paths = data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
             mChosenPicturePathList.clear();
             mChosenPicturePathList.addAll(paths);
             mImageGrids.removeAllViews();
-            for(String path : mChosenPicturePathList){
+            for (String path : mChosenPicturePathList) {
                 SimpleDraweeView image = new SimpleDraweeView(AtyMessageReply.this);
                 int size = mImageGrids.getCellSize();
-                BitmapUtils.showResizedPicture(image,Uri.parse("file://"+path), size, size);
+                BitmapUtils.showResizedPicture(image, Uri.parse("file://" + path), size, size);
                 mImageGrids.addView(image);
                 image.setOnClickListener(mListener);
             }
-            if(mImageGrids.getChildCount()<9){
+            if (mImageGrids.getChildCount() < 9) {
                 mImageGrids.addView(mDrawAddImage);
             }
         }

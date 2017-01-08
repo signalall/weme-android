@@ -10,7 +10,6 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v4.util.ArrayMap;
 import android.support.v7.widget.CardView;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
@@ -18,8 +17,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
-import android.widget.TextView;
+import android.widget.Toast;
 
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
@@ -27,15 +25,14 @@ import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
 import com.amap.api.maps2d.model.LatLng;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 import space.weme.remix.R;
@@ -46,11 +43,11 @@ import space.weme.remix.ui.base.BaseActivity;
 import space.weme.remix.util.BitmapUtils;
 import space.weme.remix.util.DimensionUtils;
 import space.weme.remix.util.LogUtils;
-import space.weme.remix.util.OkHttpUtils;
 import space.weme.remix.util.StrUtils;
 import space.weme.remix.widgt.CardFood;
 
 /**
+ * Todo: bugs
  * Created by Liujilong on 16/2/14.
  * liujilong.me@gmail.com
  */
@@ -64,7 +61,9 @@ public class AtyDiscoveryFood extends BaseActivity {
     private int state = STATE_FIRST;
 
     private CardFood mCard;
-    private FrameLayout flBackground;
+
+    @BindView(R.id.aty_discovery_background)
+    FrameLayout flBackground;
 
     private float mTranslationY;
 
@@ -79,38 +78,34 @@ public class AtyDiscoveryFood extends BaseActivity {
 
     AMapLocation mapLocation;
 
+    @BindView(R.id.aty_discovery_card)
+    CardView cardView;
+
+    @OnClick(R.id.aty_discovery_back)
+    public void onBackClick() {
+        finish();
+    }
+
+    @OnClick(R.id.aty_discovery_more)
+    public void onMoreClick() {
+        ivMoreClicked();
+    }
 
     @Override
     @SuppressWarnings("deprecation")
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_discovery_food);
+        ButterKnife.bind(this);
 
-        ImageView ivBack = (ImageView) findViewById(R.id.aty_discovery_back);
-        ivBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
-
-        ImageView ivMore = (ImageView) findViewById(R.id.aty_discovery_more);
-        ivMore.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ivMoreClicked();
-            }
-        });
 
         exec = Executors.newSingleThreadExecutor();
         mHandler = new Handler();
-        flBackground = (FrameLayout) findViewById(R.id.aty_discovery_background);
 
         BitmapDrawable b = (BitmapDrawable) getResources().getDrawable(R.mipmap.spade_bk);
         if (b != null) {
             setBackground(b.getBitmap());
         }
-
 
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(0, 0);
         DisplayMetrics displayMetrics = DimensionUtils.getDisplay();
@@ -122,24 +117,12 @@ public class AtyDiscoveryFood extends BaseActivity {
         flBackground.addView(mCard);
 
         mTranslationY = displayMetrics.heightPixels / 2 + 21 * displayMetrics.widthPixels / 40;
-        CardView cardView = (CardView) findViewById(R.id.aty_discovery_card);
         cardView.setLayoutParams(params);
         cardView.setTranslationY(mTranslationY - DimensionUtils.dp2px(64));
 
         mCard.setTranslationY(mTranslationY);
 
-        TextView tvText = (TextView) findViewById(R.id.aty_discovery_text);
-        tvText.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (state != STATE_ANIMATING) {
-                    startAnimation();
-                }
-            }
-        });
-
         foodList = new ArrayList<>();
-
 
         // get current location
         final AMapLocationClient mLocationClient = new AMapLocationClient(getApplicationContext());
@@ -164,6 +147,12 @@ public class AtyDiscoveryFood extends BaseActivity {
 
     }
 
+    @OnClick(R.id.aty_discovery_text)
+    public void onDiscoveryClick() {
+        if (state != STATE_ANIMATING) {
+            startAnimation();
+        }
+    }
 
     private void fetchFood() {
         isLoading = true;
@@ -184,6 +173,9 @@ public class AtyDiscoveryFood extends BaseActivity {
                     }
                 }, ex -> {
                     isLoading = false;
+                    Toast.makeText(AtyDiscoveryFood.this,
+                            R.string.network_error,
+                            Toast.LENGTH_SHORT).show();
                 });
     }
 

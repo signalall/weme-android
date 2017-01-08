@@ -29,6 +29,8 @@ import com.amap.api.services.poisearch.PoiSearch;
 import java.util.ArrayList;
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import space.weme.remix.R;
 import space.weme.remix.ui.base.BaseFragment;
 import space.weme.remix.util.DimensionUtils;
@@ -48,11 +50,20 @@ public class FgtFoodMap extends BaseFragment {
         return fragment;
     }
 
+    @BindView(R.id.food_map_search)
     EditText etext;
+
+    @BindView(R.id.search_cancel)
     TextView tvCancel;
+
+    @BindView(R.id.map_view)
     MapView mapView;
-    private AMap aMap;
+
+    @BindView(R.id.recycler_view)
     RecyclerView recyclerView;
+
+    AMap aMap;
+
     Adapter adapter;
 
     AtyAddFood aty;
@@ -60,17 +71,12 @@ public class FgtFoodMap extends BaseFragment {
     BitmapDescriptor descriptor = BitmapDescriptorFactory.fromResource(R.mipmap.map_marker);
 
 
-
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fgt_food_map,container,false);
+        View v = inflater.inflate(R.layout.fgt_food_map, container, false);
+        ButterKnife.bind(this, v);
         aty = (AtyAddFood) getActivity();
-
-        etext = (EditText) v.findViewById(R.id.food_map_search);
-        tvCancel = (TextView) v.findViewById(R.id.search_cancel);
-        mapView = (MapView) v.findViewById(R.id.map_view);
-
         mapView.onCreate(savedInstanceState);
         if (aMap == null) {
             aMap = mapView.getMap();
@@ -92,7 +98,7 @@ public class FgtFoodMap extends BaseFragment {
 
             @Override
             public void afterTextChanged(Editable s) {
-                if(s.length()!=0) {
+                if (s.length() != 0) {
                     searchText(s.toString());
                 }
             }
@@ -106,12 +112,10 @@ public class FgtFoodMap extends BaseFragment {
             }
         });
         ViewGroup.LayoutParams params = mapView.getLayoutParams();
-        params.height = DimensionUtils.getDisplay().widthPixels/2;
+        params.height = DimensionUtils.getDisplay().widthPixels / 2;
         mapView.setLayoutParams(params);
 
 
-
-        recyclerView = (RecyclerView) v.findViewById(R.id.recycler_view);
         adapter = new Adapter();
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
@@ -120,11 +124,11 @@ public class FgtFoodMap extends BaseFragment {
         return v;
     }
 
-    private void searchText(String text){
+    private void searchText(String text) {
         PoiSearch.Query query = new PoiSearch.Query(text, "05", "025");
         query.setPageSize(10);// 设置每页最多返回多少条poiitem
         query.setPageNum(1);//设置查询页码
-        PoiSearch poiSearch = new PoiSearch(getActivity(),query);//初始化poiSearch对象
+        PoiSearch poiSearch = new PoiSearch(getActivity(), query);//初始化poiSearch对象
         poiSearch.setOnPoiSearchListener(searchListener);//设置回调数据的监听器
         poiSearch.searchPOIAsyn();//开始搜索
     }
@@ -138,7 +142,8 @@ public class FgtFoodMap extends BaseFragment {
         }
 
         @Override
-        public void onPoiItemSearched(PoiItem poiItem, int i) {    }
+        public void onPoiItemSearched(PoiItem poiItem, int i) {
+        }
     };
 
     @Override
@@ -175,16 +180,16 @@ public class FgtFoodMap extends BaseFragment {
         mapView.onDestroy();
     }
 
-    class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
+    class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         List<PoiItem> list;
 
-        public void setList(List<PoiItem> item){
+        public void setList(List<PoiItem> item) {
             list = item;
         }
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(getActivity()).inflate(R.layout.fgt_food_map_cell,parent,false);
+            View v = LayoutInflater.from(getActivity()).inflate(R.layout.fgt_food_map_cell, parent, false);
             return new VH(v);
         }
 
@@ -195,10 +200,11 @@ public class FgtFoodMap extends BaseFragment {
             vh.tvPosition.setText(list.get(position).getSnippet());
         }
 
-        class VH extends RecyclerView.ViewHolder{
+        class VH extends RecyclerView.ViewHolder {
             TextView tvName;
             TextView tvChoose;
             TextView tvPosition;
+
             public VH(View itemView) {
                 super(itemView);
                 tvName = (TextView) itemView.findViewById(R.id.location_name);
@@ -209,7 +215,7 @@ public class FgtFoodMap extends BaseFragment {
                     public void onClick(View v) {
                         int position = getAdapterPosition();
                         LatLonPoint point = list.get(position).getLatLonPoint();
-                        LatLng latLng = new LatLng(point.getLatitude(),point.getLongitude());
+                        LatLng latLng = new LatLng(point.getLatitude(), point.getLongitude());
                         // zoom level is in 4-20
                         CameraUpdate update = CameraUpdateFactory.newLatLngZoom(latLng, 16);
                         aMap.moveCamera(update);
@@ -229,8 +235,9 @@ public class FgtFoodMap extends BaseFragment {
                 });
             }
         }
+
         public int getItemCount() {
-            return list==null?0:list.size();
+            return list == null ? 0 : list.size();
         }
     }
 

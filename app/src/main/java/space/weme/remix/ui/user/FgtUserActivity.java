@@ -13,12 +13,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.facebook.drawee.view.SimpleDraweeView;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -149,6 +152,9 @@ public class FgtUserActivity extends BaseFragment {
                     }
                 }, ex -> {
                     Log.e(TAG, "getActivity: " + ex.getMessage());
+                    Toast.makeText(getActivity(),
+                            R.string.network_error,
+                            Toast.LENGTH_SHORT).show();
                 });
     }
 
@@ -158,7 +164,7 @@ public class FgtUserActivity extends BaseFragment {
         return TAG;
     }
 
-    private class ActivityAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    class ActivityAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         List<Activity> activities;
         Context mContext;
@@ -198,21 +204,28 @@ public class FgtUserActivity extends BaseFragment {
         }
 
         class VH extends RecyclerView.ViewHolder {
+
+            @BindView(R.id.fgt_activity_item_image)
             SimpleDraweeView mAvatar;
+
+            @BindView(R.id.fgt_activity_item_title)
             TextView mTvTitle;
+
+            @BindView(R.id.fgt_activity_item_count)
             TextView mTvCount;
+
+            @BindView(R.id.fgt_activity_item_time)
             TextView mTvTime;
+
+            @BindView(R.id.fgt_activity_item_location)
             TextView mTvLocation;
+
+            @BindView(R.id.fgt_activity_item_status)
             TextView mTvStatus;
 
             public VH(View itemView) {
                 super(itemView);
-                mAvatar = (SimpleDraweeView) itemView.findViewById(R.id.fgt_activity_item_image);
-                mTvTitle = (TextView) itemView.findViewById(R.id.fgt_activity_item_title);
-                mTvCount = (TextView) itemView.findViewById(R.id.fgt_activity_item_count);
-                mTvTime = (TextView) itemView.findViewById(R.id.fgt_activity_item_time);
-                mTvLocation = (TextView) itemView.findViewById(R.id.fgt_activity_item_location);
-                mTvStatus = (TextView) itemView.findViewById(R.id.fgt_activity_item_status);
+                ButterKnife.bind(this, itemView);
             }
         }
     }

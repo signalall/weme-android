@@ -13,6 +13,8 @@ import com.amap.api.maps2d.model.BitmapDescriptorFactory;
 import com.amap.api.maps2d.model.LatLng;
 import com.amap.api.maps2d.model.MarkerOptions;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import space.weme.remix.R;
 import space.weme.remix.ui.base.BaseActivity;
 
@@ -26,24 +28,24 @@ public class AtyFoodMap extends BaseActivity {
     public static final String INTENT_LAT = "intent_lat";
     public static final String INTENT_LON = "intent_lon";
 
-
-    private MapView mapView;
+    @BindView(R.id.map)
+    MapView mapView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_food_map);
+        ButterKnife.bind(this);
         TextView toolbar = (TextView) findViewById(R.id.toolbar);
         toolbar.setText(R.string.food_location);
 
-        double lat = getIntent().getDoubleExtra(INTENT_LAT,0);
-        double lon = getIntent().getDoubleExtra(INTENT_LON,0);
+        double lat = getIntent().getDoubleExtra(INTENT_LAT, 0);
+        double lon = getIntent().getDoubleExtra(INTENT_LON, 0);
 
-        mapView = (MapView) findViewById(R.id.map);
         mapView.onCreate(savedInstanceState);
         AMap aMap = mapView.getMap();
 
-        LatLng latLng = new LatLng(lat,lon);
+        LatLng latLng = new LatLng(lat, lon);
         // zoom level is in 4-20
         CameraUpdate update = CameraUpdateFactory.newLatLngZoom(latLng, 16);
         aMap.moveCamera(update);

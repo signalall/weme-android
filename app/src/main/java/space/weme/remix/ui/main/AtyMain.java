@@ -15,6 +15,11 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.util.List;
+
+import butterknife.BindView;
+import butterknife.BindViews;
+import butterknife.ButterKnife;
 import space.weme.remix.R;
 import space.weme.remix.ui.aty.AtyPublicActivity;
 import space.weme.remix.ui.aty.AtySearchActivity;
@@ -28,7 +33,7 @@ import space.weme.remix.widgt.TabItem;
  * Created by Liujilong on 16/1/24.
  * liujilong.me@gmail.com
  */
-public class AtyMain extends BaseActivity{
+public class AtyMain extends BaseActivity {
 
     private static final String TAG = "AtyMain";
     public static final String INTENT_LOGOUT = "intent_lougout";
@@ -43,24 +48,37 @@ public class AtyMain extends BaseActivity{
             R.string.me
     };
 
-    private TabItem[] tabItems;
-    private ViewPager mPager;
-    private TextView mTvTitle;
-    private ImageView ivMore;
-    private ViewGroup wholeLayout;
+    @BindViews({R.id.main_item_activity,
+            R.id.main_item_community,
+            R.id.main_item_find,
+            R.id.main_item_me
+    })
+    List<TabItem> tabItems;
 
-     Dialog dialog;
+    @BindView(R.id.main_pager)
+    ViewPager mPager;
+
+    @BindView(R.id.main_title)
+    TextView mTvTitle;
+
+    @BindView(R.id.more_action)
+    ImageView ivMore;
+
+    @BindView(R.id.whole_layout)
+    ViewGroup wholeLayout;
+
+    Dialog dialog;
     private View.OnClickListener dialogListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            switch (v.getId()){
+            switch (v.getId()) {
                 case R.id.action_publish:
-                Intent publicActivity=new Intent(AtyMain.this, AtyPublicActivity.class);
-                startActivity(publicActivity);
+                    Intent publicActivity = new Intent(AtyMain.this, AtyPublicActivity.class);
+                    startActivity(publicActivity);
                     break;
                 case R.id.action_search:
-                Intent search=new Intent(AtyMain.this, AtySearchActivity.class);
-                startActivity(search);
+                    Intent search = new Intent(AtyMain.this, AtySearchActivity.class);
+                    startActivity(search);
                     break;
                 case R.id.action_qrcode:
                     break;
@@ -68,61 +86,56 @@ public class AtyMain extends BaseActivity{
             dialog.dismiss();
         }
     };
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getIntent().getBooleanExtra(INTENT_LOGOUT, false))
-        {
-            Intent i = new Intent(AtyMain.this,AtyLogin.class);
+        if (getIntent().getBooleanExtra(INTENT_LOGOUT, false)) {
+            Intent i = new Intent(AtyMain.this, AtyLogin.class);
             startActivity(i);
             finish();
             return;
         }
-        if(getIntent().getBooleanExtra(INTENT_UPDATE,false)){
+        if (getIntent().getBooleanExtra(INTENT_UPDATE, false)) {
             UpdateUtils.checkUpdate(AtyMain.this);
         }
         setContentView(R.layout.aty_main);
-
+        ButterKnife.bind(this);
         bindViews();
     }
 
-    private void bindViews(){
-        tabItems = new TabItem[4];
-        tabItems[0] = (TabItem) findViewById(R.id.main_item_activity);
-        tabItems[1] = (TabItem) findViewById(R.id.main_item_community);
-        tabItems[2] = (TabItem) findViewById(R.id.main_item_find);
-        tabItems[3] = (TabItem) findViewById(R.id.main_item_me);
-        tabItems[0].setEnable(true);
+    private void bindViews() {
+
+        tabItems.get(0).setEnable(true);
 
 
 //        toolbar.inflateMenu(R.menu.menu_main);
 //        toolbar.setOnMenuItemClickListener(this);
 
-        mPager = (ViewPager) findViewById(R.id.main_pager);
-        mTvTitle = (TextView) findViewById(R.id.main_title);
         mTvTitle.setText(R.string.activity);
-        ivMore = (ImageView) findViewById(R.id.more_action);
-        wholeLayout = (ViewGroup) findViewById(R.id.whole_layout);
-
 
         Adapter mAdapter = new Adapter(getFragmentManager());
         mPager.setAdapter(mAdapter);
         mPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+            }
+
             @Override
             public void onPageSelected(int position) {
                 mTvTitle.setText(mTitleTexts[position]);
-                for(int i = 0;i<PAGE_COUNT; i++){
-                    tabItems[i].setEnable(i==position);
+                for (int i = 0; i < PAGE_COUNT; i++) {
+                    tabItems.get(i).setEnable(i == position);
                 }
-                if (position==0)
+                if (position == 0)
                     ivMore.setVisibility(View.VISIBLE);
                 else {
                     ivMore.setVisibility(View.GONE);
                 }
             }
+
             @Override
-            public void onPageScrollStateChanged(int state) {}
+            public void onPageScrollStateChanged(int state) {
+            }
         });
         View.OnClickListener mTabItemClickListener = new View.OnClickListener() {
             @Override
@@ -131,9 +144,9 @@ public class AtyMain extends BaseActivity{
                 mPager.setCurrentItem(p);
             }
         };
-        for(int i = 0; i<PAGE_COUNT; i++){
-            tabItems[i].setTag(i);
-            tabItems[i].setOnClickListener(mTabItemClickListener);
+        for (int i = 0; i < PAGE_COUNT; i++) {
+            tabItems.get(i).setTag(i);
+            tabItems.get(i).setOnClickListener(mTabItemClickListener);
         }
 
         ivMore.setOnClickListener(new View.OnClickListener() {
@@ -148,7 +161,7 @@ public class AtyMain extends BaseActivity{
                 WindowManager.LayoutParams wmlp = dialog.getWindow().getAttributes();
                 wmlp.gravity = Gravity.TOP | Gravity.END;
                 wmlp.x = DimensionUtils.dp2px(20);   //x position
-                wmlp.y = DimensionUtils.dp2px(56)+DimensionUtils. getStatusBarHeight();   //y position
+                wmlp.y = DimensionUtils.dp2px(56) + DimensionUtils.getStatusBarHeight();   //y position
                 wmlp.width = DimensionUtils.dp2px(160);
                 wmlp.height = DimensionUtils.dp2px(123);
                 dialog.show();
@@ -165,7 +178,7 @@ public class AtyMain extends BaseActivity{
 
         @Override
         public Fragment getItem(int position) {
-            switch(position){
+            switch (position) {
                 case 0:
                     return FgtActivity.newInstance();
                 case 1:

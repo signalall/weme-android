@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.facebook.drawee.generic.RoundingParams;
 import com.facebook.drawee.view.SimpleDraweeView;
@@ -160,7 +161,7 @@ public class FgtActivity extends BaseFragment {
                         this.page = page;
                     }
                     List<Activity> activities = resp.getResult();
-                    if (activities.isEmpty()) {
+                    if (activities == null || activities.isEmpty()) {
                         canLoadMore = false;
                         return;
                     }
@@ -170,7 +171,12 @@ public class FgtActivity extends BaseFragment {
                     isLoading = false;
                     mSwipeLayout.setRefreshing(false);
                 }, ex -> {
+                    isRefreshing = false;
+                    isLoading = false;
                     Log.e(TAG, "getActivityInfo: " + ex.getMessage());
+                    Toast.makeText(getActivity(),
+                            R.string.network_error,
+                            Toast.LENGTH_SHORT).show();
                 });
     }
 

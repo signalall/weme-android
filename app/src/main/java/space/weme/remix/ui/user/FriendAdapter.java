@@ -14,6 +14,8 @@ import com.facebook.drawee.view.SimpleDraweeView;
 
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import space.weme.remix.R;
 import space.weme.remix.model.FriendData;
 import space.weme.remix.util.StrUtils;
@@ -26,7 +28,7 @@ public class FriendAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     private Context mContext;
     View.OnClickListener mCellListener;
 
-    public FriendAdapter(Context context){
+    public FriendAdapter(Context context) {
         mContext = context;
         mCellListener = new View.OnClickListener() {
             @Override
@@ -48,7 +50,7 @@ public class FriendAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(mContext).inflate(R.layout.aty_friend_cell,parent,false);
+        View view = LayoutInflater.from(mContext).inflate(R.layout.aty_friend_cell, parent, false);
         return new UserViewHolder(view);
     }
 
@@ -60,27 +62,33 @@ public class FriendAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         h.name.setText(f.name);
         h.school.setText(f.school);
         boolean isBoy = f.gender.equals(mContext.getResources().getString(R.string.boy));
-        h.gender.setImageResource(isBoy?R.mipmap.boy:R.mipmap.girl);
+        h.gender.setImageResource(isBoy ? R.mipmap.boy : R.mipmap.girl);
         h.itemView.setTag(f.id);
         h.itemView.setOnClickListener(mCellListener);
     }
 
     @Override
     public int getItemCount() {
-        return list==null?0:list.size();
+        return list == null ? 0 : list.size();
     }
 
-    private class UserViewHolder extends RecyclerView.ViewHolder{
+    class UserViewHolder extends RecyclerView.ViewHolder {
+
+        @BindView(R.id.aty_friend_cell_avatar)
         SimpleDraweeView avatar;
+
+        @BindView(R.id.aty_friend_cell_name)
         TextView name;
+
+        @BindView(R.id.aty_friend_cell_gender)
         ImageView gender;
+
+        @BindView(R.id.aty_friend_cell_school)
         TextView school;
+
         public UserViewHolder(View itemView) {
             super(itemView);
-            avatar = (SimpleDraweeView) itemView.findViewById(R.id.aty_friend_cell_avatar);
-            name = (TextView) itemView.findViewById(R.id.aty_friend_cell_name);
-            gender = (ImageView) itemView.findViewById(R.id.aty_friend_cell_gender);
-            school = (TextView) itemView.findViewById(R.id.aty_friend_cell_school);
+            ButterKnife.bind(this, itemView);
         }
     }
 }

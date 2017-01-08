@@ -9,6 +9,10 @@ import android.os.Handler;
 import com.facebook.common.util.UriUtil;
 import com.facebook.drawee.view.SimpleDraweeView;
 
+import java.util.concurrent.TimeUnit;
+
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import space.weme.remix.R;
 import space.weme.remix.ui.base.BaseActivity;
 import space.weme.remix.ui.main.AtyMain;
@@ -28,7 +32,6 @@ public class AtyWelcome extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_welcome);
 
-        Handler handler = new Handler();
         final SimpleDraweeView iv = (SimpleDraweeView) findViewById(R.id.background);
         Uri uri = new Uri.Builder()
                 .scheme(UriUtil.LOCAL_RESOURCE_SCHEME) // "res"
@@ -36,35 +39,38 @@ public class AtyWelcome extends BaseActivity {
                 .build();
         int width = DimensionUtils.getDisplay().widthPixels;
         int height = DimensionUtils.getDisplay().heightPixels;
-        BitmapUtils.showResizedPicture(iv,uri,width,height);
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {SharedPreferences sp = getSharedPreferences(StrUtils.SP_USER, MODE_PRIVATE);
-                String token = sp.getString(StrUtils.SP_USER_TOKEN, "");
-                if (token.equals("")) {
-                    loginIn();
-                    overridePendingTransition(0,0);
-                }else{
-                    main();
-                    overridePendingTransition(0,0);
-                }
-                finish();
-            }
-        },1000);
+        BitmapUtils.showResizedPicture(iv, uri, width, height);
+
+        rx.Observable.timer(1, TimeUnit.SECONDS)
+                .subscribeOn(Schedulers.io())
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    SharedPreferences sp = getSharedPreferences(StrUtils.SP_USER, MODE_PRIVATE);
+                    String token = sp.getString(StrUtils.SP_USER_TOKEN, "");
+                    if (token.equals("")) {
+                        loginIn();
+                        overridePendingTransition(0, 0);
+                    } else {
+                        main();
+                        overridePendingTransition(0, 0);
+                    }
+                    finish();
+                }, ex -> {
+
+                });
     }
 
-    private void loginIn(){
-        Intent i = new Intent(AtyWelcome.this,AtyLogin.class);
-        i.putExtra(AtyLogin.INTENT_UPDATE,true);
+    private void loginIn() {
+        Intent i = new Intent(AtyWelcome.this, AtyLogin.class);
+        i.putExtra(AtyLogin.INTENT_UPDATE, true);
         startActivity(i);
     }
 
-    private void main(){
+    private void main() {
         Intent i = new Intent(AtyWelcome.this, AtyMain.class);
-        i.putExtra(AtyMain.INTENT_UPDATE,true);
+        i.putExtra(AtyMain.INTENT_UPDATE, true);
         startActivity(i);
     }
-
 
 
     @Override

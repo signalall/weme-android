@@ -21,6 +21,9 @@ import org.json.JSONObject;
 import java.io.File;
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import me.nereo.multi_image_selector.MultiImageSelectorActivity;
 import space.weme.remix.R;
 import space.weme.remix.ui.base.BaseActivity;
@@ -39,8 +42,13 @@ public class AtyAddFood extends BaseActivity{
     static final int REQUEST_IMAGE = 0x12;
     static final int REQUEST_CROP = 0x13;
 
+    @BindView(R.id.title_text)
     TextView tvTitle;
+
+    @BindView(R.id.right_text)
     TextView tvRight;
+
+    @BindView(R.id.frame_container)
     FrameLayout frameContainer;
 
     FgtAddFood fgtAddFood;
@@ -51,19 +59,10 @@ public class AtyAddFood extends BaseActivity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_add_food);
-        tvTitle = (TextView) findViewById(R.id.title_text);
-        tvRight = (TextView) findViewById(R.id.right_text);
-        frameContainer = (FrameLayout) findViewById(R.id.frame_container);
+        ButterKnife.bind(this);
 
         tvTitle.setText(R.string.edit_food_card);
         tvRight.setText(R.string.finish);
-
-        tvRight.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                uploadFood();
-            }
-        });
 
         fgtAddFood = FgtAddFood.newInstance();
         fgtPrice = FgtPrice.newInstance();
@@ -71,6 +70,11 @@ public class AtyAddFood extends BaseActivity{
 
         getFragmentManager().beginTransaction().add(R.id.frame_container,fgtAddFood).commit();
 
+    }
+
+    @OnClick(R.id.right_text)
+    public void onRightTextClick() {
+        uploadFood();
     }
 
     protected void switchToFragment(Fragment fragment){

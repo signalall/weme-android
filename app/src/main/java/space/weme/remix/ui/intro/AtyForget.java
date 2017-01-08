@@ -8,6 +8,7 @@ import android.os.Handler;
 import android.support.v4.util.ArrayMap;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -18,7 +19,11 @@ import org.json.JSONObject;
 
 import java.util.regex.Pattern;
 
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import space.weme.remix.R;
+import space.weme.remix.service.Services;
+import space.weme.remix.service.UserService;
 import space.weme.remix.ui.base.BaseActivity;
 import space.weme.remix.util.LogUtils;
 import space.weme.remix.util.OkHttpUtils;
@@ -46,6 +51,7 @@ public class AtyForget extends BaseActivity {
     ProgressDialog progressDialog;
 
     TextWatcher mTextWatcher;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,7 +65,7 @@ public class AtyForget extends BaseActivity {
         etCode = (EditText) findViewById(R.id.verification_code);
         btnCode = (Button) findViewById(R.id.gain_verification_code);
 
-        mCountDown = new CountDownButton(btnCode,btnCode.getText().toString(),60,1);
+        mCountDown = new CountDownButton(btnCode, btnCode.getText().toString(), 60, 1);
         btnCode.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -70,9 +76,13 @@ public class AtyForget extends BaseActivity {
 
         mTextWatcher = new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
             @Override
             public void afterTextChanged(Editable s) {
                 checkText();
@@ -90,42 +100,43 @@ public class AtyForget extends BaseActivity {
         });
     }
 
-    private void sendCode(){
-        ArrayMap<String,String> param = new ArrayMap<>();
-        param.put("phone",etPhone.getText().toString());
-        param.put("type", "2");
-        OkHttpUtils.post(StrUtils.SEND_CODE, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
-            @Override
-            public void onResponse(String s) {
-                LogUtils.d(TAG, s);
-                JSONObject j = OkHttpUtils.parseJSON(AtyForget.this, s);
-                if (j != null) {
+    private void sendCode() {
+        String phone = etPhone.getText().toString();
+        Services.userService()
+                .sendSmsCode(new UserService.SendSmsCode(phone, "2"))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "sendSmsCode: " + resp.toString());
                     Toast.makeText(AtyForget.this, R.string.send_code_complete, Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+                }, ex -> {
+                    Log.e(TAG, "sendSmsCode: " + ex.getMessage());
+                    Toast.makeText(AtyForget.this,
+                            R.string.network_error,
+                            Toast.LENGTH_SHORT).show();
+                });
     }
 
-    private void checkText(){
-        if(!phone.matcher(etPhone.getText()).matches()){
+    private void checkText() {
+        if (!phone.matcher(etPhone.getText()).matches()) {
             tvReset.setEnabled(false);
             tvError.setText(R.string.please_input_phone);
             btnCode.setEnabled(false);
             return;
-        }else{
+        } else {
             btnCode.setEnabled(true);
         }
-        if(etCode.getText().length()==0){
+        if (etCode.getText().length() == 0) {
             tvReset.setEnabled(false);
             tvError.setText(R.string.code_length);
             return;
         }
-        if(etPass.getText().length()<6){
+        if (etPass.getText().length() < 6) {
             tvReset.setEnabled(false);
             tvError.setText(R.string.password_long_6);
             return;
         }
-        if(!etPass.getText().toString().equals(etPass2.getText().toString())){
+        if (!etPass.getText().toString().equals(etPass2.getText().toString())) {
             tvReset.setEnabled(false);
             tvError.setText(R.string.password_not_equal);
             return;
@@ -133,20 +144,21 @@ public class AtyForget extends BaseActivity {
         tvReset.setEnabled(true);
         tvError.setText("");
     }
-    private void reset(){
+
+    private void reset() {
         String name = etPhone.getText().toString();
         String passMD5 = StrUtils.md5(etPass.getText().toString());
-        ArrayMap<String,String> param = new ArrayMap<>();
-        param.put("phone",name);
+        ArrayMap<String, String> param = new ArrayMap<>();
+        param.put("phone", name);
         param.put("password", passMD5);
-        param.put("code",etCode.getText().toString());
-        progressDialog = ProgressDialog.show(AtyForget.this,null,"正在重置密码");
-        OkHttpUtils.post(StrUtils.RESET_PASSWORD,param,TAG,new OkHttpUtils.SimpleOkCallBack(){
+        param.put("code", etCode.getText().toString());
+        progressDialog = ProgressDialog.show(AtyForget.this, null, "正在重置密码");
+        OkHttpUtils.post(StrUtils.RESET_PASSWORD, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
             @Override
             public void onResponse(String s) {
-                LogUtils.i(TAG,s);
+                LogUtils.i(TAG, s);
                 final JSONObject j = OkHttpUtils.parseJSON(AtyForget.this, s);
-                if(j == null){
+                if (j == null) {
                     progressDialog.dismiss();
                     return;
                 }

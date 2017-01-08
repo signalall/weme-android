@@ -19,6 +19,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import okhttp3.MediaType;
 import space.weme.remix.R;
 import space.weme.remix.ui.base.BaseActivity;
@@ -47,12 +50,29 @@ public class AtyAudioRecord extends BaseActivity {
 
     private int mRecordState = STATE_INIT;
 
-    private LinearLayout mLeftLayout, mRightLayout;
-    private ImageView mLeftButton, mRightButton;
-    private TextView mLeftTextView, mRightTextView;
-    private AudioVisualizerView mVisualizerView;
+    @BindView(R.id.left_layout)
+    LinearLayout mLeftLayout;
 
-    private TextView tvUploadRecord;
+    @BindView(R.id.right_layout)
+    LinearLayout mRightLayout;
+
+    @BindView(R.id.left_button)
+    ImageView mLeftButton;
+
+    @BindView(R.id.right_button)
+    ImageView mRightButton;
+
+    @BindView(R.id.left_text)
+    TextView mLeftTextView;
+
+    @BindView(R.id.right_text)
+    TextView mRightTextView;
+
+    @BindView(R.id.visualizer_view)
+    AudioVisualizerView mVisualizerView;
+
+    @BindView(R.id.upload_audio_record)
+    TextView tvUploadRecord;
 
     private MediaRecorder mRecorder;
     private MediaPlayer mPlayer;
@@ -60,7 +80,8 @@ public class AtyAudioRecord extends BaseActivity {
 
     private boolean canUpload = false;
 
-    private TimerView mTimerView;
+    @BindView(R.id.aty_audio_timer_view)
+    TimerView mTimerView;
 
     private String mFileName;
 
@@ -70,24 +91,9 @@ public class AtyAudioRecord extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_audio_record);
+        ButterKnife.bind(this);
         mHandler = new Handler(getMainLooper());
-        mLeftButton = (ImageView) findViewById(R.id.left_button);
-        mLeftLayout = (LinearLayout) findViewById(R.id.left_layout);
-        mLeftTextView = (TextView) findViewById(R.id.left_text);
-        mRightButton = (ImageView) findViewById(R.id.right_button);
-        mRightLayout = (LinearLayout) findViewById(R.id.right_layout);
-        mRightTextView = (TextView) findViewById(R.id.right_text);
 
-        mVisualizerView = (AudioVisualizerView) findViewById(R.id.visualizer_view);
-
-        mTimerView = (TimerView) findViewById(R.id.aty_audio_timer_view);
-
-        tvUploadRecord = (TextView) findViewById(R.id.upload_audio_record);
-
-        tvUploadRecord.setOnClickListener(uploadListener);
-
-        mLeftButton.setOnClickListener(leftClickListener);
-        mRightButton.setOnClickListener(rightClickListener);
 
         mFileName = Environment.getExternalStorageDirectory()
                 + File.separator + "record.m4a";
@@ -95,39 +101,37 @@ public class AtyAudioRecord extends BaseActivity {
         //mFileName = g+ File.separator+"record.m4a";
     }
 
-    View.OnClickListener leftClickListener = new View.OnClickListener(){
-        @Override
-        public void onClick(View v) {
-            switch (mRecordState){
-                case STATE_INIT:
-                    startAudioRecord();
-                    break;
-                case STATE_RECORDING:
-                    stopAudioRecord();
-                    break;
-                case STATE_PLAY:
-                    Toast.makeText(AtyAudioRecord.this, getResources().getString(R.string.audio_palying), Toast.LENGTH_SHORT).show();
-                    break;
-                case STATE_FINISH:
-                    layoutAnimateReversely();
-                    startAudioRecord();
-            }
+    @OnClick(R.id.left_button)
+    public void onLeftClick() {
+        switch (mRecordState) {
+            case STATE_INIT:
+                startAudioRecord();
+                break;
+            case STATE_RECORDING:
+                stopAudioRecord();
+                break;
+            case STATE_PLAY:
+                Toast.makeText(AtyAudioRecord.this, getResources().getString(R.string.audio_palying), Toast.LENGTH_SHORT).show();
+                break;
+            case STATE_FINISH:
+                layoutAnimateReversely();
+                startAudioRecord();
         }
-    };
-    View.OnClickListener rightClickListener = new View.OnClickListener(){
-        @Override
-        public void onClick(View v) {
-            switch (mRecordState){
-                case STATE_FINISH:
-                    playRecord();
-                    break;
-                case STATE_PLAY:
-                    stopPlayRecord();
-            }
-        }
-    };
+    }
 
-    private void playRecord(){
+    @OnClick(R.id.right_button)
+    public void onRightClick() {
+        switch (mRecordState) {
+            case STATE_FINISH:
+                playRecord();
+                break;
+            case STATE_PLAY:
+                stopPlayRecord();
+        }
+    }
+
+
+    private void playRecord() {
         mPlayer = new MediaPlayer();
         try {
             mPlayer.setDataSource(mFileName);
@@ -136,7 +140,7 @@ public class AtyAudioRecord extends BaseActivity {
                 @Override
                 public void onCompletion(MediaPlayer mp) {
                     mRecordState = STATE_FINISH;
-                    mHandler.postDelayed(delayedUpload,2000);
+                    mHandler.postDelayed(delayedUpload, 2000);
                     mRightTextView.setText(R.string.audio_play_record);
                     mRightButton.setBackgroundDrawable(getResources().getDrawable(R.drawable.bg_audio_play));
                     mVisualizer.release();
@@ -147,30 +151,27 @@ public class AtyAudioRecord extends BaseActivity {
             mPlayer.start();
             mVisualizer = new Visualizer(mPlayer.getAudioSessionId());
             mVisualizer.setCaptureSize(Visualizer.getCaptureSizeRange()[1]);
-            Visualizer.OnDataCaptureListener captureListener = new Visualizer.OnDataCaptureListener()
-            {
+            Visualizer.OnDataCaptureListener captureListener = new Visualizer.OnDataCaptureListener() {
                 @Override
                 public void onWaveFormDataCapture(Visualizer visualizer, byte[] audioData,
-                                                  int samplingRate)
-                {
+                                                  int samplingRate) {
                     //LogUtils.d(TAG, "onWaveFormDataCapture" + Arrays.toString(audioData));
                     double amplitude = 0;
-                    for (int i = 0; i < audioData.length/2; i++) {
-                        double y = (audioData[i*2] | audioData[i*2+1] << 8) / 32768.0;
+                    for (int i = 0; i < audioData.length / 2; i++) {
+                        double y = (audioData[i * 2] | audioData[i * 2 + 1] << 8) / 32768.0;
                         // depending on your endianness:
                         // double y = (audioData[i*2]<<8 | audioData[i*2+1]) / 32768.0
                         amplitude += Math.abs(y);
                     }
-                    LogUtils.d(TAG,"before plus amplitude: " + amplitude);
+                    LogUtils.d(TAG, "before plus amplitude: " + amplitude);
                     amplitude = amplitude / audioData.length / 2;
-                    LogUtils.d(TAG,"after plus amplitude: " + amplitude);
+                    LogUtils.d(TAG, "after plus amplitude: " + amplitude);
                     mVisualizerView.addAmplitude((float) amplitude);
                 }
 
                 @Override
                 public void onFftDataCapture(Visualizer visualizer, byte[] bytes,
-                                             int samplingRate)
-                {
+                                             int samplingRate) {
                     //LogUtils.d(TAG, "onFftDataCapture" + Arrays.toString(bytes));
                 }
             };
@@ -187,9 +188,9 @@ public class AtyAudioRecord extends BaseActivity {
         mRightTextView.setText(R.string.audio_stop_playing);
     }
 
-    private void stopPlayRecord(){
+    private void stopPlayRecord() {
         mRecordState = STATE_FINISH;
-        mHandler.postDelayed(delayedUpload,2000);
+        mHandler.postDelayed(delayedUpload, 2000);
         mPlayer.release();
         mPlayer = null;
         mRightTextView.setText(R.string.audio_play_record);
@@ -200,7 +201,7 @@ public class AtyAudioRecord extends BaseActivity {
     }
 
 
-    private void startAudioRecord(){
+    private void startAudioRecord() {
         mRecorder = new MediaRecorder();
         mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
@@ -222,7 +223,7 @@ public class AtyAudioRecord extends BaseActivity {
         mTimerView.start();
     }
 
-    private void stopAudioRecord(){
+    private void stopAudioRecord() {
         mRecorder.stop();
         mRecorder.release();
         mRecorder = null;
@@ -232,11 +233,11 @@ public class AtyAudioRecord extends BaseActivity {
         layoutAnimate();
     }
 
-    private void layoutAnimate(){
+    private void layoutAnimate() {
         int width = DimensionUtils.getDisplay().widthPixels;
-        ObjectAnimator.ofFloat(mLeftLayout,"TranslationX",0,-width/4).setDuration(500).start();
+        ObjectAnimator.ofFloat(mLeftLayout, "TranslationX", 0, -width / 4).setDuration(500).start();
         mRightLayout.setVisibility(View.VISIBLE);
-        ObjectAnimator.ofFloat(mRightLayout,"TranslationX",0,width/4).setDuration(500).start();
+        ObjectAnimator.ofFloat(mRightLayout, "TranslationX", 0, width / 4).setDuration(500).start();
 
         mLeftButton.setBackgroundDrawable(getResources().getDrawable(R.drawable.bg_audio_re_record));
         mLeftTextView.setText(R.string.audio_re_record);
@@ -246,11 +247,11 @@ public class AtyAudioRecord extends BaseActivity {
         canUpload = true;
     }
 
-    private void layoutAnimateReversely(){
+    private void layoutAnimateReversely() {
         final int width = DimensionUtils.getDisplay().widthPixels;
-        ObjectAnimator.ofFloat(mLeftLayout,"TranslationX",-width/4,0).setDuration(500).start();
+        ObjectAnimator.ofFloat(mLeftLayout, "TranslationX", -width / 4, 0).setDuration(500).start();
         ObjectAnimator animator =
-        ObjectAnimator.ofFloat(mRightLayout,"TranslationX",width/4,0).setDuration(500);
+                ObjectAnimator.ofFloat(mRightLayout, "TranslationX", width / 4, 0).setDuration(500);
         animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
@@ -292,23 +293,21 @@ public class AtyAudioRecord extends BaseActivity {
         }
     };
 
-    View.OnClickListener uploadListener = new View.OnClickListener(){
-        @Override
-        public void onClick(View v) {
-            if(mRecordState == STATE_PLAY || !canUpload){
-                Toast.makeText(AtyAudioRecord.this, R.string.please_stop_playing_first, Toast.LENGTH_SHORT).show();
-            }else if(mRecordState == STATE_FINISH){
-                uploadRecord();
-            }
+    @OnClick(R.id.upload_audio_record)
+    void onUploadClick() {
+        if (mRecordState == STATE_PLAY || !canUpload) {
+            Toast.makeText(AtyAudioRecord.this, R.string.please_stop_playing_first, Toast.LENGTH_SHORT).show();
+        } else if (mRecordState == STATE_FINISH) {
+            uploadRecord();
         }
-    };
+    }
 
-    private void uploadRecord(){
-        Map<String,String> map=new ArrayMap<>();
+    private void uploadRecord() {
+        Map<String, String> map = new ArrayMap<>();
         map.put("token", StrUtils.token());
         map.put("type", "-12");
         final LoadingPrompt prompt = new LoadingPrompt(this);
-        prompt.show(tvUploadRecord,getString(R.string.upload_record));
+        prompt.show(tvUploadRecord, getString(R.string.upload_record));
         OkHttpUtils.uploadAudio(StrUtils.UPLOAD_AVATAR_URL, map, mFileName, MediaType.parse("audio/mp4"), TAG, new OkHttpUtils.SimpleOkCallBack() {
             @Override
             public void onResponse(String s) {

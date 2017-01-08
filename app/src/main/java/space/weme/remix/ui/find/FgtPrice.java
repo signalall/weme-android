@@ -10,6 +10,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import butterknife.ButterKnife;
 import space.weme.remix.R;
 import space.weme.remix.ui.base.BaseFragment;
 
@@ -19,7 +20,7 @@ import space.weme.remix.ui.base.BaseFragment;
  */
 public class FgtPrice extends BaseFragment {
 
-    private static final String TAG = "FgtPrice";
+    private static final String TAG = FgtPrice.class.getSimpleName();
 
     public static FgtPrice newInstance() {
         Bundle args = new Bundle();
@@ -35,17 +36,17 @@ public class FgtPrice extends BaseFragment {
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fgt_food_price,container,false);
+        View v = inflater.inflate(R.layout.fgt_food_price, container, false);
         listView = (ListView) v;
         aty = (AtyAddFood) getActivity();
         array = getResources().getStringArray(R.array.food_card_price);
-        listView.setAdapter(new ArrayAdapter<String>(getActivity(),R.layout.fgt_price_cell,array){
+        listView.setAdapter(new ArrayAdapter<String>(getActivity(), R.layout.fgt_price_cell, array) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
-                if(convertView == null){
+                if (convertView == null) {
                     convertView = LayoutInflater.from(getContext()).inflate(R.layout.fgt_price_cell, parent, false);
                 }
-                ((TextView)convertView ).setText(array[position]);
+                ((TextView) convertView).setText(array[position]);
                 return convertView;
             }
         });

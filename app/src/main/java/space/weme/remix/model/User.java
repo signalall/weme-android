@@ -1,87 +1,156 @@
 package space.weme.remix.model;
 
-import org.json.JSONObject;
+import com.google.gson.annotations.SerializedName;
 
 /**
  * Created by Liujilong on 2016/1/28.
  * liujilong.me@gmail.com
  */
 public class User {
-    public String birthday;
-    public String degree;
-    public String enrollment;
-    public String hobby;
-    public int ID;
-    public String phone;
-    public String preference;
-    public String qq;
-    public String wechat;
-    public String username;
-    public String name;
-    public String school;
-    public String department;
-    public String gender;
-    public String hometown;
-    public String lookcount;
-    public String weme;
-    public String constellation;
-    public String voiceUrl;
+    @SerializedName("birthday")
+    private String birthday;
 
-    public String avatar;
-    public boolean match;
+    @SerializedName("degree")
+    private String degree;
 
-    public static User fromJSON(JSONObject j){
-        User user = new User();
-        user.birthday = j.optString("birthday");
-        user.degree = j.optString("degree");
-        user.department = j.optString("department");
-        user.enrollment = j.optString("enrollment");
-        user.gender = j.optString("gender");
-        user.hobby = j.optString("hobby");
-        user.hometown = j.optString("hometown");
-        user.ID = j.optInt("id");
-        user.lookcount = j.optString("lookcount");
-        user.name = j.optString("name");
-        user.phone = j.optString("phone");
-        user.preference = j.optString("preference");
-        user.qq = j.optString("qq");
-        user.school = j.optString("school");
-        user.username = j.optString("username");
-        user.wechat = j.optString("wechat");
-        user.weme = j.optString("weme");
-        user.constellation = j.optString("constellation");
+    @SerializedName("enrollment")
+    private String enrollment;
 
-        user.voiceUrl = j.optString("voice","");
-        user.avatar = j.optString("avatar");
-        user.match = j.optString("match","0").equals("1");
-        return user;
+    @SerializedName("hobby")
+    private String hobby;
+
+    @SerializedName("id")
+    private int id;
+
+    @SerializedName("phone")
+    private String phone;
+
+    @SerializedName("preference")
+    private String preference;
+
+    @SerializedName("qq")
+    private String qq;
+
+    @SerializedName("wechat")
+    private String wechat;
+
+    @SerializedName("username")
+    private String username;
+
+    @SerializedName("name")
+    private String name;
+
+    @SerializedName("school")
+    private String school;
+
+    @SerializedName("department")
+    private String department;
+
+    @SerializedName("gender")
+    private String gender;
+
+    @SerializedName("hometown")
+    private String hometown;
+
+    @SerializedName("lookcount")
+    private String lookcount;
+
+    @SerializedName("weme")
+    private String weme;
+
+    @SerializedName("constellation")
+    private String constellation;
+
+    @SerializedName("voice")
+    private String voiceUrl;
+
+    @SerializedName("avatar")
+    private String avatar;
+
+    @SerializedName("match")
+    private String match; // "0" "1"
+
+    public String getBirthday() {
+        return birthday;
     }
 
-    public String toJSONString(){
-        JSONObject j = new JSONObject();
-        try {
-            j.put("birthday", birthday);
-            j.put("degree",degree);
-            j.put("department",department);
-            j.put("enrollment",enrollment);
-            j.put("gender",gender);
-            j.put("hobby",hobby);
-            j.put("hometown",hometown);
-            j.put("id",ID);
-            j.put("lookcount",lookcount);
-            j.put("name",name);
-            j.put("phone",phone);
-            j.put("preference", preference);
-            j.put("qq",qq);
-            j.put("school",school);
-            j.put("username",username);
-            j.put("wechat",wechat);
-            j.put("weme",weme);
-            j.put("constellation",constellation);
-            j.put("avatar",avatar);
-        }catch(Exception e){
-            // ignore
-        }
-        return j.toString();
+    public String getDegree() {
+        return degree;
+    }
+
+    public String getEnrollment() {
+        return enrollment;
+    }
+
+    public String getHobby() {
+        return hobby;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public String getPreference() {
+        return preference;
+    }
+
+    public String getQq() {
+        return qq;
+    }
+
+    public String getWechat() {
+        return wechat;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getSchool() {
+        return school;
+    }
+
+    public String getDepartment() {
+        return department;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public String getHometown() {
+        return hometown;
+    }
+
+    public String getLookcount() {
+        return lookcount;
+    }
+
+    public String getWeme() {
+        return weme;
+    }
+
+    public String getConstellation() {
+        return constellation;
+    }
+
+    public String getVoiceUrl() {
+        return voiceUrl;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public String getMatch() {
+        return match;
     }
 }

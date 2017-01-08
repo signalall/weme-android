@@ -7,6 +7,8 @@ import android.support.design.widget.TabLayout;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import space.weme.remix.R;
 import space.weme.remix.ui.base.BaseActivity;
 
@@ -17,16 +19,19 @@ import space.weme.remix.ui.base.BaseActivity;
 public class AtyUserActivity extends BaseActivity {
     private static final String TAG = "AtyUserActivity";
 
+    @BindView(R.id.aty_user_activity_tab)
     TabLayout tabLayout;
+
+    @BindView(R.id.aty_user_activity_pager)
     ViewPager viewPager;
+
     ActivityPagerAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_user_activity);
-        tabLayout = (TabLayout) findViewById(R.id.aty_user_activity_tab);
-        viewPager = (ViewPager) findViewById(R.id.aty_user_activity_pager);
+        ButterKnife.bind(this);
 
         adapter = new ActivityPagerAdapter(getFragmentManager());
         viewPager.setAdapter(adapter);

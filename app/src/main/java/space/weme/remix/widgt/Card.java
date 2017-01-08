@@ -96,21 +96,21 @@ public class Card extends CardView {
 
     }
 
-    public static Card fromXML(AtyDiscovery context, ViewGroup parent){
-        Card card = (Card) LayoutInflater.from(context).inflate(R.layout.aty_discovery_card,parent,false);
-        if(card.getChildCount()>1){
+    public static Card fromXML(AtyDiscovery context, ViewGroup parent) {
+        Card card = (Card) LayoutInflater.from(context).inflate(R.layout.aty_discovery_card, parent, false);
+        if (card.getChildCount() > 1) {
             card.mFront = card.getChildAt(1);
             card.mBack = card.getChildAt(0);
             card.isFront = false;
-            card.mFront .setVisibility(GONE);
+            card.mFront.setVisibility(GONE);
             card.configFront();
         }
         card.aty = context;
         return card;
     }
 
-    public void setAvatarSize(){
-        if(mFront==null){
+    public void setAvatarSize() {
+        if (mFront == null) {
             return;
         }
         SimpleDraweeView avatar = (SimpleDraweeView) mFront.findViewById(R.id.card_people_avatar);
@@ -120,36 +120,36 @@ public class Card extends CardView {
     }
 
 
-    public void turnOver(){
-        if(!checkBackAndFront()){
+    public void turnOver() {
+        if (!checkBackAndFront()) {
             return;
         }
-        if(isFront){
+        if (isFront) {
             stopLikeAnimation();
             stopMedia();
-        }else{
+        } else {
             startLikeAnimation();
             ViewGroup.LayoutParams params = ivVoice.getLayoutParams();
             params.width = params.height;
             ivVoice.setLayoutParams(params);
         }
         isLiked = false;
-        mFront.setVisibility(isFront?GONE:VISIBLE);
-        mBack.setVisibility(isFront?VISIBLE:GONE);
+        mFront.setVisibility(isFront ? GONE : VISIBLE);
+        mBack.setVisibility(isFront ? VISIBLE : GONE);
         isFront = !isFront;
     }
 
-    private void stopLikeAnimation(){
+    private void stopLikeAnimation() {
         animator.cancel();
     }
 
-    private void startLikeAnimation(){
+    private void startLikeAnimation() {
         animator.start();
     }
 
-    private boolean checkBackAndFront(){
-        if(mBack==null||mFront==null){
-            if(getChildCount()>1) {
+    private boolean checkBackAndFront() {
+        if (mBack == null || mFront == null) {
+            if (getChildCount() > 1) {
                 mFront = getChildAt(1);
                 mBack = getChildAt(0);
                 mFront.setVisibility(GONE);
@@ -162,7 +162,7 @@ public class Card extends CardView {
         return true;
     }
 
-    private void configFront(){
+    private void configFront() {
         mFront.setRotationX(180);
         setCameraDistance(50000);
         avatar = (SimpleDraweeView) mFront.findViewById(R.id.card_people_avatar);
@@ -179,7 +179,7 @@ public class Card extends CardView {
         avatarListener = new AvatarListener();
 
 
-        animator = ValueAnimator.ofFloat(0.6f,1.4f);
+        animator = ValueAnimator.ofFloat(0.6f, 1.4f);
         animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
@@ -195,11 +195,13 @@ public class Card extends CardView {
         frameLayout.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(user == null) {return;}
+                if (user == null) {
+                    return;
+                }
                 if (!isLiked) {
                     ArrayMap<String, String> map = new ArrayMap<>();
                     map.put("token", StrUtils.token());
-                    map.put("userid", user.ID + "");
+                    map.put("userid", user.getId() + "");
                     final User cached = user;
                     OkHttpUtils.post(StrUtils.LIKE_USER_CARD, map, TAG, new OkHttpUtils.SimpleOkCallBack() {
                         @Override
@@ -210,7 +212,7 @@ public class Card extends CardView {
                                 return;
                             }
                             String flag = j.optString("flag");
-                            if ("1".equals(flag)&&cached==user) {
+                            if ("1".equals(flag) && cached == user) {
                                 aty.showLikeEachOther(user);
                             }
                         }
@@ -223,13 +225,13 @@ public class Card extends CardView {
 
 
         Random random = new Random(System.currentTimeMillis());
-        ObjectAnimator a1 = ObjectAnimator.ofFloat(tvLikeAdd,"Rotation",0,random.nextFloat()*360);
-        ObjectAnimator a2 = ObjectAnimator.ofFloat(tvLikeAdd,"ScaleX",1f,0.5f);
-        ObjectAnimator a3 = ObjectAnimator.ofFloat(tvLikeAdd,"ScaleY",1f,0.5f);
+        ObjectAnimator a1 = ObjectAnimator.ofFloat(tvLikeAdd, "Rotation", 0, random.nextFloat() * 360);
+        ObjectAnimator a2 = ObjectAnimator.ofFloat(tvLikeAdd, "ScaleX", 1f, 0.5f);
+        ObjectAnimator a3 = ObjectAnimator.ofFloat(tvLikeAdd, "ScaleY", 1f, 0.5f);
         ObjectAnimator a4 = ObjectAnimator.ofFloat(tvLikeAdd, "Alpha", 1f, 0f);
-        ObjectAnimator a5 = ObjectAnimator.ofFloat(tvLikeAdd,"TranslationY",0, DimensionUtils.dp2px(30));
+        ObjectAnimator a5 = ObjectAnimator.ofFloat(tvLikeAdd, "TranslationY", 0, DimensionUtils.dp2px(30));
         likeTextAnimator = new AnimatorSet();
-        likeTextAnimator.playTogether(a1,a2,a3,a4,a5);
+        likeTextAnimator.playTogether(a1, a2, a3, a4, a5);
         likeTextAnimator.setDuration(1000);
         likeTextAnimator.addListener(new Animator.AnimatorListener() {
             @Override
@@ -243,35 +245,37 @@ public class Card extends CardView {
             }
 
             @Override
-            public void onAnimationCancel(Animator animation) {            }
+            public void onAnimationCancel(Animator animation) {
+            }
 
             @Override
-            public void onAnimationRepeat(Animator animation) {            }
+            public void onAnimationRepeat(Animator animation) {
+            }
         });
     }
 
 
-    public void showUser(final User user){
-        if(!checkBackAndFront()){
+    public void showUser(final User user) {
+        if (!checkBackAndFront()) {
             return;
         }
         this.user = user;
         showAvatar(user);
-        avatarListener.setId(user.ID + "");
+        avatarListener.setId(user.getId() + "");
         avatar.setOnClickListener(avatarListener);
-        tvName.setText(user.name);
-        ivGender.setImageResource(user.gender.equals("\u7537") ? R.mipmap.boy : R.mipmap.girl);
-        tvBirth.setText(user.birthday);
-        tvSchool.setText(user.school);
-        tvDegree.setText(user.degree);
-        if(user.hometown==null || user.hometown.trim().equals("") || user.hometown.equals("null")){
+        tvName.setText(user.getName());
+        ivGender.setImageResource(user.getGender().equals("\u7537") ? R.mipmap.boy : R.mipmap.girl);
+        tvBirth.setText(user.getBirthday());
+        tvSchool.setText(user.getSchool());
+        tvDegree.setText(user.getDegree());
+        if (user.getHometown() == null || user.getHometown().trim().equals("") || user.getHometown().equals("null")) {
             tvLocation.setText(R.string.hometown_unknown);
-        }else {
-            tvLocation.setText(user.hometown);
+        } else {
+            tvLocation.setText(user.getHometown());
         }
-        if(TextUtils.equals(user.voiceUrl,"")){
+        if (TextUtils.equals(user.getVoiceUrl(), "")) {
             ivVoice.setVisibility(GONE);
-        }else{
+        } else {
             ivVoice.setVisibility(VISIBLE);
             voiceListener = new VoiceListener();
             voiceListener.setUser(user);
@@ -279,14 +283,14 @@ public class Card extends CardView {
         }
     }
 
-    private void showAvatar(User user){
+    private void showAvatar(User user) {
         ControllerListener controllerListener = new BaseControllerListener<ImageInfo>() {
             @Override
-            public void onFinalImageSet(  String id, ImageInfo imageInfo, Animatable anim) {
+            public void onFinalImageSet(String id, ImageInfo imageInfo, Animatable anim) {
                 if (imageInfo == null) {
                     return;
                 }
-                if(imageInfo instanceof CloseableStaticBitmap) {
+                if (imageInfo instanceof CloseableStaticBitmap) {
                     CloseableStaticBitmap b = (CloseableStaticBitmap) imageInfo;
                     Bitmap bitmap = b.getUnderlyingBitmap();
                     aty.setBackground(bitmap);
@@ -294,55 +298,58 @@ public class Card extends CardView {
             }
 
             @Override
-            public void onIntermediateImageSet(String id, @Nullable ImageInfo imageInfo) {     }
+            public void onIntermediateImageSet(String id, @Nullable ImageInfo imageInfo) {
+            }
 
             @Override
-            public void onFailure(String id, Throwable throwable) {       }
+            public void onFailure(String id, Throwable throwable) {
+            }
         };
 
-        Uri uri = Uri.parse(user.avatar);
+        Uri uri = Uri.parse(user.getAvatar());
         DraweeController controller = Fresco.newDraweeControllerBuilder()
                 .setControllerListener(controllerListener)
                 .setUri(uri)
-        .build();
+                .build();
         avatar.setController(controller);
     }
 
-    class AvatarListener implements View.OnClickListener{
+    class AvatarListener implements View.OnClickListener {
         String id;
 
-        public void setId(String id){
+        public void setId(String id) {
             this.id = id;
         }
 
         @Override
         public void onClick(View v) {
-            Intent i = new Intent(aty,AtyInfo.class);
-            i.putExtra(AtyInfo.ID_INTENT,id);
+            Intent i = new Intent(aty, AtyInfo.class);
+            i.putExtra(AtyInfo.ID_INTENT, id);
             aty.startActivity(i);
         }
     }
 
-    public void stopMedia(){
-        if(mediaState == 1 && mMediaPlayer != null){
+    public void stopMedia() {
+        if (mediaState == 1 && mMediaPlayer != null) {
             mMediaPlayer.stop();
             mMediaPlayer.release();
             mediaState = 0;
         }
     }
 
-    class VoiceListener implements View.OnClickListener{
+    class VoiceListener implements View.OnClickListener {
         private User user;
 
-        public void setUser(User user){
+        public void setUser(User user) {
             this.user = user;
         }
+
         @Override
         public void onClick(View v) {
-            if(mediaState == 0) {
+            if (mediaState == 0) {
                 mMediaPlayer = new MediaPlayer();
                 try {
-                    mMediaPlayer.setDataSource(getContext(), Uri.parse(user.voiceUrl));
+                    mMediaPlayer.setDataSource(getContext(), Uri.parse(user.getVoiceUrl()));
                     mMediaPlayer.prepareAsync();
                     mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                         @Override
@@ -356,11 +363,11 @@ public class Card extends CardView {
                             mediaState = 0;
                         }
                     });
-                    mediaState=1;
+                    mediaState = 1;
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            }else{
+            } else {
                 stopMedia();
             }
         }

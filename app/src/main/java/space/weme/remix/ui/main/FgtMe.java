@@ -11,6 +11,7 @@ import android.os.Looper;
 import android.os.MessageQueue;
 import android.support.annotation.Nullable;
 import android.support.v4.util.ArrayMap;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,6 +20,7 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.facebook.drawee.generic.RoundingParams;
 import com.facebook.drawee.view.SimpleDraweeView;
@@ -34,8 +36,15 @@ import org.json.JSONObject;
 import java.util.EnumMap;
 import java.util.Map;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import space.weme.remix.R;
 import space.weme.remix.model.User;
+import space.weme.remix.service.Services;
+import space.weme.remix.service.UserService;
 import space.weme.remix.ui.base.BaseFragment;
 import space.weme.remix.ui.user.AtyFriend;
 import space.weme.remix.ui.user.AtyInfo;
@@ -56,20 +65,23 @@ public class FgtMe extends BaseFragment {
 
     private static final String TAG = "FgtMe";
 
+    @BindView(R.id.fgt_me_avatar)
     SimpleDraweeView mDraweeAvatar;
+
+    @BindView(R.id.fgt_me_layout)
     LinearLayout llLayout;
+
+    @BindView(R.id.fgt_me_name)
     TextView mTvName;
+
+    @BindView(R.id.fgt_me_count)
     TextView mTvCount;
 
     View qrCodeView;
     boolean isQrCodeShowing = false;
 
-    View.OnClickListener mListener;
     User me;
-
     Bitmap mQRBitmap;
-
-
 
     public static FgtMe newInstance() {
         Bundle args = new Bundle();
@@ -96,30 +108,15 @@ public class FgtMe extends BaseFragment {
     }
 
 
-
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View rootView = inflater.inflate(R.layout.fgt_me,container,false);
-        mDraweeAvatar = (SimpleDraweeView) rootView.findViewById(R.id.fgt_me_avatar);
-        mTvName = (TextView) rootView.findViewById(R.id.fgt_me_name);
-        mTvCount = (TextView) rootView.findViewById(R.id.fgt_me_count);
-        llLayout = (LinearLayout) rootView.findViewById(R.id.fgt_me_layout);
+        View rootView = inflater.inflate(R.layout.fgt_me, container, false);
+        ButterKnife.bind(this, rootView);
 
         RoundingParams roundingParams = RoundingParams.fromCornersRadius(5f);
         roundingParams.setRoundAsCircle(true);
         mDraweeAvatar.getHierarchy().setRoundingParams(roundingParams);
-
-        setClickListener(rootView);
-
-        
-        rootView.findViewById(R.id.fgt_me_qrcode).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showQRCode();
-            }
-        });
-
         return rootView;
     }
 
@@ -132,8 +129,8 @@ public class FgtMe extends BaseFragment {
         mDraweeAvatar.setImageURI(Uri.parse(StrUtils.thumForID(StrUtils.id() + "")));
     }
 
-    private void fetchUnreadMessage(){
-        ArrayMap<String,String> param = new ArrayMap<>();
+    private void fetchUnreadMessage() {
+        ArrayMap<String, String> param = new ArrayMap<>();
         param.put("token", StrUtils.token());
         OkHttpUtils.post(StrUtils.GET_UNREAD_MESSAGE_URL, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
             @Override
@@ -169,84 +166,85 @@ public class FgtMe extends BaseFragment {
         });
     }
 
-    private void fetchNameInfo(){
-        ArrayMap<String,String> param = new ArrayMap<>();
-        param.put("token",StrUtils.token());
-        OkHttpUtils.post(StrUtils.GET_PERSON_INFO,param,TAG,new OkHttpUtils.SimpleOkCallBack(){
-            @Override
-            public void onResponse(String s) {
-                //LogUtils.i(TAG,s);
-                JSONObject j = OkHttpUtils.parseJSON(getActivity(), s);
-                if(j == null){
-                    return;
-                }
-                me = User.fromJSON(j);
-                mTvName.setText(me.name);
-                showQRCodeUserInfo();
-            }
-        });
-
+    private void fetchNameInfo() {
+        Services.userService()
+                .getProfile(new UserService.GetProfile(StrUtils.token()))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "getProfile: " + resp.toString());
+                    me = resp;
+                    mTvName.setText(me.getName());
+                    showQRCodeUserInfo();
+                }, ex -> {
+                    Log.e(TAG, "getProfile: " + ex.toString());
+                    Toast.makeText(getActivity(),
+                            R.string.network_error,
+                            Toast.LENGTH_SHORT).show();
+                });
     }
 
 
+    @OnClick(R.id.fgt_me_me)
+    public void onMeClick() {
+        Intent i = new Intent(getActivity(), AtyInfo.class);
+        i.putExtra(AtyInfo.ID_INTENT, StrUtils.id());
+        getActivity().startActivity(i);
+    }
 
-    private void setClickListener(View rootView){
-        mListener = new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                switch (v.getId()){
-                    case R.id.fgt_me_me:
-                        Intent i = new Intent(getActivity(), AtyInfo.class);
-                        i.putExtra(AtyInfo.ID_INTENT,StrUtils.id());
-                        getActivity().startActivity(i);
-                        break;
-                    case R.id.fgt_me_friend:
-                        getActivity().startActivity(new Intent(getActivity(), AtyFriend.class));
-                        break;
-                    case R.id.fgt_me_message:
-                        getActivity().startActivity(new Intent(getActivity(), AtyMessage.class));
-                        break;
-                    case R.id.fgt_me_activity:
-                        getActivity().startActivity(new Intent(getActivity(), AtyUserActivity.class));
-                        break;
-                    case R.id.fgt_me_location:
-                        getActivity().startActivity(new Intent(getActivity(),AtyNearBy.class));
-                        break;
-                    case R.id.fgt_me_setting:
-                        getActivity().startActivity(new Intent(getActivity(),AtySetting.class));
-                        break;
-                }
-            }
-        };
-        rootView.findViewById(R.id.fgt_me_me).setOnClickListener(mListener);
-        rootView.findViewById(R.id.fgt_me_friend).setOnClickListener(mListener);
-        rootView.findViewById(R.id.fgt_me_message).setOnClickListener(mListener);
-        rootView.findViewById(R.id.fgt_me_activity).setOnClickListener(mListener);
-        rootView.findViewById(R.id.fgt_me_location).setOnClickListener(mListener);
-        rootView.findViewById(R.id.fgt_me_setting).setOnClickListener(mListener);
+    @OnClick(R.id.fgt_me_friend)
+    public void onFriendClick() {
+        getActivity()
+                .startActivity(new Intent(getActivity(), AtyFriend.class));
+    }
+
+    @OnClick(R.id.fgt_me_message)
+    public void onMessageClick() {
+        getActivity()
+                .startActivity(new Intent(getActivity(), AtyMessage.class));
+    }
+
+    @OnClick(R.id.fgt_me_activity)
+    public void onActivityClick() {
+        getActivity()
+                .startActivity(new Intent(getActivity(), AtyUserActivity.class));
 
     }
 
+    @OnClick(R.id.fgt_me_location)
+    void onLocationClick() {
+        getActivity().startActivity(new Intent(getActivity(), AtyNearBy.class));
+    }
 
+
+    @OnClick(R.id.fgt_me_setting)
+    void onSettingClick() {
+        getActivity().startActivity(new Intent(getActivity(), AtySetting.class));
+    }
+
+    @OnClick(R.id.fgt_me_qrcode)
+    public void onQRCodeClick() {
+        showQRCode();
+    }
 
     @Override
     protected String tag() {
         return TAG;
     }
-    
-    private void showQRCode(){
+
+    private void showQRCode() {
         LogUtils.i(TAG, "showQRCode");
-        final Dialog dialog = new Dialog(getActivity(),R.style.DialogTransparent);
-        qrCodeView = LayoutInflater.from(getActivity()).inflate(R.layout.qrcode_user,llLayout,false);
-        final int size = DimensionUtils.getDisplay().widthPixels*4/5-DimensionUtils.dp2px(32);
+        final Dialog dialog = new Dialog(getActivity(), R.style.DialogTransparent);
+        qrCodeView = LayoutInflater.from(getActivity()).inflate(R.layout.qrcode_user, llLayout, false);
+        final int size = DimensionUtils.getDisplay().widthPixels * 4 / 5 - DimensionUtils.dp2px(32);
         final ImageView qr_code = (ImageView) qrCodeView.findViewById(R.id.qr_code);
         ViewGroup.LayoutParams param = qr_code.getLayoutParams();
         param.width = size;
         param.height = size;
 
-        if(mQRBitmap!=null){
+        if (mQRBitmap != null) {
             qr_code.setImageBitmap(mQRBitmap);
-        }else{
+        } else {
             drawQRCodeWithCallBack(qr_code);
         }
 
@@ -265,7 +263,6 @@ public class FgtMe extends BaseFragment {
         });
 
 
-
         dialog.setContentView(qrCodeView);
         WindowManager.LayoutParams wmlp = dialog.getWindow().getAttributes();
         wmlp.gravity = Gravity.CENTER;
@@ -273,44 +270,44 @@ public class FgtMe extends BaseFragment {
         isQrCodeShowing = true;
     }
 
-    private void showQRCodeUserInfo(){
-        if(qrCodeView != null && isQrCodeShowing) {
+    private void showQRCodeUserInfo() {
+        if (qrCodeView != null && isQrCodeShowing) {
             TextView name = (TextView) qrCodeView.findViewById(R.id.name);
-            name.setText(me.name);
+            name.setText(me.getName());
             TextView school = (TextView) qrCodeView.findViewById(R.id.school);
-            school.setText(me.school);
+            school.setText(me.getSchool());
             ImageView iv = (ImageView) qrCodeView.findViewById(R.id.gender);
-            boolean male = getResources().getString(R.string.male).equals(me.gender);
+            boolean male = getResources().getString(R.string.male).equals(me.getGender());
             iv.setImageResource(male ? R.mipmap.boy : R.mipmap.girl);
         }
     }
 
 
-
     private void drawQRCode() throws WriterException {
-        if(mQRBitmap!=null){
+        if (mQRBitmap != null) {
             return;
         }
         QRCodeWriter writer = new QRCodeWriter();
-            String data = "weme://user/" + StrUtils.id();
-            Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
-            hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
-            hints.put(EncodeHintType.MARGIN, 0); /* default = 4 */
-            hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
-            final int size = DimensionUtils.getDisplay().widthPixels*4/5-DimensionUtils.dp2px(32);
-            BitMatrix bitMatrix = writer.encode(data, BarcodeFormat.QR_CODE, size, size, hints);
-            mQRBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565);
-            for (int x = 0; x < size; x++) {
-                for (int y = 0; y < size; y++) {
-                    if (bitMatrix.get(x, y))
-                        mQRBitmap.setPixel(x, y, 0x3e5d9e);
-                    else
-                        mQRBitmap.setPixel(x, y, Color.WHITE);
-                }
+        String data = "weme://user/" + StrUtils.id();
+        Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
+        hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
+        hints.put(EncodeHintType.MARGIN, 0); /* default = 4 */
+        hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
+        final int size = DimensionUtils.getDisplay().widthPixels * 4 / 5 - DimensionUtils.dp2px(32);
+        BitMatrix bitMatrix = writer.encode(data, BarcodeFormat.QR_CODE, size, size, hints);
+        mQRBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565);
+        for (int x = 0; x < size; x++) {
+            for (int y = 0; y < size; y++) {
+                if (bitMatrix.get(x, y))
+                    mQRBitmap.setPixel(x, y, 0x3e5d9e);
+                else
+                    mQRBitmap.setPixel(x, y, Color.WHITE);
             }
+        }
     }
-    private void drawQRCodeWithCallBack(final ImageView iv){
-        new Thread(){
+
+    private void drawQRCodeWithCallBack(final ImageView iv) {
+        new Thread() {
             @Override
             public void run() {
                 try {

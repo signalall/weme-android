@@ -18,6 +18,9 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import space.weme.remix.R;
 import space.weme.remix.model.University;
 import space.weme.remix.ui.base.BaseActivity;
@@ -26,34 +29,38 @@ import space.weme.remix.ui.base.BaseActivity;
  * Created by Liujilong on 16/2/4.
  * liujilong.me@gmail.com
  */
-public class AtySearchCity extends BaseActivity{
+public class AtySearchCity extends BaseActivity {
     private static final String TAG = "AtySearchCity";
     public static final String INTENT_UNIVERSITY = "intent_university";
 
-    ImageView ivBack, ivSearch;
+    @BindView(R.id.aty_search_city_back)
+    ImageView ivBack;
+
+    @BindView(R.id.aty_search_city_search)
+    ImageView ivSearch;
+
+    @BindView(R.id.aty_search_city_text)
     EditText etText;
+
+    @BindView(R.id.aty_search_city_list)
     ExpandableListView expandableListView;
+
     Adapter adapter;
 
     List<List<University>> wholeList;
     boolean loadFinish = false;
 
+    @OnClick(R.id.aty_search_city_back)
+    public void onBackClick() {
+        finish();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_search_city);
+        ButterKnife.bind(this);
 
-        ivBack = (ImageView) findViewById(R.id.aty_search_city_back);
-        ivSearch = (ImageView) findViewById(R.id.aty_search_city_search);
-        etText = (EditText) findViewById(R.id.aty_search_city_text);
-        expandableListView = (ExpandableListView) findViewById(R.id.aty_search_city_list);
-
-        ivBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
         adapter = new Adapter(this);
         expandableListView.setAdapter(adapter);
 
@@ -79,7 +86,7 @@ public class AtySearchCity extends BaseActivity{
         expandableListView.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
             @Override
             public boolean onChildClick(ExpandableListView parent, View v, int groupPosition, int childPosition, long id) {
-                University university = (University) adapter.getChild(groupPosition,childPosition);
+                University university = (University) adapter.getChild(groupPosition, childPosition);
                 Intent i = new Intent();
                 i.putExtra(INTENT_UNIVERSITY, university.name);
                 setResult(RESULT_OK, i);
@@ -90,20 +97,20 @@ public class AtySearchCity extends BaseActivity{
 
     }
 
-    private List<List<University>> filter(String s){
+    private List<List<University>> filter(String s) {
         List<List<University>> res = new ArrayList<>();
-        for(List<University> universityList : wholeList){
+        for (List<University> universityList : wholeList) {
             boolean found = false;
             ArrayList<University> filteredU = new ArrayList<>();
-            for(University u : universityList){
-                if(u.province.contains(s)||u.name.contains((s))){
-                    if(!found){
+            for (University u : universityList) {
+                if (u.province.contains(s) || u.name.contains((s))) {
+                    if (!found) {
                         found = true;
                     }
                     filteredU.add(u);
                 }
             }
-            if(found){
+            if (found) {
                 res.add(filteredU);
             }
         }
@@ -111,25 +118,25 @@ public class AtySearchCity extends BaseActivity{
     }
 
     @SuppressWarnings("unused")
-    private void loadJSON(){
-        new Thread(){
+    private void loadJSON() {
+        new Thread() {
             @Override
             public void run() {
                 final String res;
-                try{
+                try {
                     InputStream in = getResources().openRawResource(R.raw.university);
                     int length = in.available();
 
-                    byte [] buffer = new byte[length];
-                    int len =  in.read(buffer);
-                    res = new String(buffer,"utf-8");
+                    byte[] buffer = new byte[length];
+                    int len = in.read(buffer);
+                    res = new String(buffer, "utf-8");
                     in.close();
                     List<List<University>> lists = University.fromJSON(res);
                     wholeList = lists;
                     adapter.setLists(lists);
                     adapter.notifyDataSetChanged();
                     loadFinish = true;
-                }catch(Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -143,12 +150,12 @@ public class AtySearchCity extends BaseActivity{
     }
 
 
-    class Adapter extends BaseExpandableListAdapter{
+    class Adapter extends BaseExpandableListAdapter {
 
         List<List<University>> lists = null;
         private Context mContext;
 
-        public Adapter(Context context){
+        public Adapter(Context context) {
             mContext = context;
         }
 
@@ -158,12 +165,12 @@ public class AtySearchCity extends BaseActivity{
 
         @Override
         public int getGroupCount() {
-            return lists==null?0:lists.size();
+            return lists == null ? 0 : lists.size();
         }
 
         @Override
         public int getChildrenCount(int groupPosition) {
-            return lists.get(groupPosition)==null?0:lists.get(groupPosition).size();
+            return lists.get(groupPosition) == null ? 0 : lists.get(groupPosition).size();
         }
 
         @Override
@@ -183,7 +190,7 @@ public class AtySearchCity extends BaseActivity{
 
         @Override
         public long getChildId(int groupPosition, int childPosition) {
-            return groupPosition<<8+childPosition;
+            return groupPosition << 8 + childPosition;
         }
 
         @Override
@@ -193,11 +200,11 @@ public class AtySearchCity extends BaseActivity{
 
         @Override
         public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
-            if(convertView == null){
-                convertView = LayoutInflater.from(mContext).inflate(R.layout.aty_search_city_group,parent,false);
+            if (convertView == null) {
+                convertView = LayoutInflater.from(mContext).inflate(R.layout.aty_search_city_group, parent, false);
             }
             TextView tv = (TextView) convertView;
-            University fir  = lists.get(groupPosition).get(0);
+            University fir = lists.get(groupPosition).get(0);
             tv.setText(fir.province);
 
             ExpandableListView mExpandableListView = (ExpandableListView) parent;
@@ -207,11 +214,11 @@ public class AtySearchCity extends BaseActivity{
 
         @Override
         public View getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
-            if(convertView == null){
-                convertView = LayoutInflater.from(mContext).inflate(R.layout.aty_search_city_child,parent,false);
+            if (convertView == null) {
+                convertView = LayoutInflater.from(mContext).inflate(R.layout.aty_search_city_child, parent, false);
             }
             TextView tv = (TextView) convertView;
-            University fir  = lists.get(groupPosition).get(childPosition);
+            University fir = lists.get(groupPosition).get(childPosition);
             tv.setText(fir.name);
             return convertView;
         }

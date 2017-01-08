@@ -12,6 +12,8 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import me.imid.swipebacklayout.lib.SwipeBackLayout;
 import space.weme.remix.R;
 import space.weme.remix.model.FriendData;
@@ -27,6 +29,8 @@ import space.weme.remix.util.StrUtils;
  */
 public class AtySeeMe extends SwipeActivity {
     private static final String TAG = "AtySeeMe";
+
+    @BindView(R.id.aty_see_me_recycler)
     RecyclerView mRecycler;
     FriendAdapter adapter;
 
@@ -40,12 +44,12 @@ public class AtySeeMe extends SwipeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_see_me);
+        ButterKnife.bind(this);
 
         SwipeBackLayout mSwipeBackLayout = getSwipeBackLayout();
         mSwipeBackLayout.setEdgeSize(DimensionUtils.getDisplay().widthPixels / 2);
         mSwipeBackLayout.setEdgeTrackingEnabled(SwipeBackLayout.EDGE_LEFT);
 
-        mRecycler = (RecyclerView) findViewById(R.id.aty_see_me_recycler);
         adapter = new FriendAdapter(this);
         mRecycler.setLayoutManager(new LinearLayoutManager(this));
         mRecycler.setHasFixedSize(true);

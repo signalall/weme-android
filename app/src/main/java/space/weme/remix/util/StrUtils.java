@@ -34,30 +34,20 @@ public final class StrUtils {
      * ####################### URLs ###############################
      **/
     public static final String BASE_URL = "http://218.244.147.240:8080/";
+//    public static final String BASE_URL = "http://samuellcn.6655.la:18973/weme/";
+//    public static final String BASE_URL = "http://192.168.199.182:8080/weme/";
 
     private static final String BASE_URL_NGINX = "http://218.244.147.240/";
-
-    public static final String LOGIN_URL = BASE_URL + "login";
-
-    public static final String REGISTER_URL = BASE_URL + "register";
-
-    public static final String REGISTER_PHONE = BASE_URL + "registerphone";
-
-    public static final String EDIT_PROFILE_URL = BASE_URL + "editprofileinfo";
 
     public static final String GET_TOP_ACTIVITY_URL = BASE_URL + "activitytopofficial";
 
     public static final String TOP_BROAD_URL = BASE_URL + "topofficial";
-
-    public static final String GET_PERSON_INFO = BASE_URL + "getprofile";
 
     public static final String GET_UNREAD_MESSAGE_URL = BASE_URL + "unreadmessagenum";
 
     public static final String GET_VISIT_INFO = BASE_URL + "visitinfo";
 
     public static final String VISIT_USER = BASE_URL + "visit";
-
-    public static final String GET_PROFILE_BY_ID = BASE_URL + "getprofilebyid";
 
     public static final String GET_TIME_LINE_URL = BASE_URL + "getusertimeline";
 
@@ -79,7 +69,6 @@ public final class StrUtils {
 
     public static final String SEND_MESSAGE = BASE_URL + "sendmessage";
 
-    public static final String GET_RECOMMEND_USER = BASE_URL + "getrecommenduser";
 
     public static final String FOLLOW_USER = BASE_URL + "follow";
 
@@ -91,7 +80,6 @@ public final class StrUtils {
 
     public static final String PUBLISH_CARD = BASE_URL + "publishcard";
 
-    public static final String SEND_CODE = BASE_URL + "sendsmscode";
 
     public static final String RESET_PASSWORD = BASE_URL + "resetpassword";
 
@@ -214,9 +202,9 @@ public final class StrUtils {
 
     /**
      * Generate a value suitable for use in setId(int)
-     * This value will not collide with ID values generated at build time by aapt for R.id.
+     * This value will not collide with id values generated at build time by aapt for R.id.
      *
-     * @return a generated ID value
+     * @return a generated id value
      */
     public static int generateViewId() {
         for (; ; ) {

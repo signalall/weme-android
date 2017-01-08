@@ -134,6 +134,7 @@
     <string name="copy_password">重新输入密码</string>
     <string name="register">注册</string>
     <string name="please_input_phone">请输入11位数字手机号码</string>
+    <string name="phone_registered">手机号码已注册</string>
     <string name="code_length">请输入正确的验证码</string>
     <string name="send_code_complete">发送验证码完成</string>
     <string name="forget_password">忘记密码？</string>
@@ -168,29 +169,29 @@
 
 
     <string-array name="aty_info_tabs">
-        <item >个人资料</item>
-        <item >时间轴</item>
-        <item >图集</item>
+        <item>个人资料</item>
+        <item>时间轴</item>
+        <item>图集</item>
     </string-array>
 
     <string-array name="aty_user_activity_titles">
-        <item >我发布的活动</item>
-        <item >我关注的活动</item>
-        <item >我报名的活动</item>
+        <item>我发布的活动</item>
+        <item>我关注的活动</item>
+        <item>我报名的活动</item>
     </string-array>
 
     <string-array name="food_card_price">
-        <item >免费</item>
-        <item >1&#8211;10</item>
-        <item >10&#8211;50</item>
-        <item >50&#8211;100</item>
-        <item >100&#8211;200</item>
-        <item >200&#8211;500</item>
-        <item >500&#8211;1000</item>
-        <item >1000+</item>
+        <item>免费</item>
+        <item>1&#8211;10</item>
+        <item>10&#8211;50</item>
+        <item>50&#8211;100</item>
+        <item>100&#8211;200</item>
+        <item>200&#8211;500</item>
+        <item>500&#8211;1000</item>
+        <item>1000+</item>
     </string-array>
 
-    <item type="id" name="tag_first"></item>
-    <item type="id" name="tag_second"></item>
+    <item name="tag_first" type="id"></item>
+    <item name="tag_second" type="id"></item>
 
 </resources>

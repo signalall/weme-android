@@ -14,6 +14,8 @@ import com.facebook.drawee.view.SimpleDraweeView;
 
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import space.weme.remix.R;
 import space.weme.remix.model.Message;
 import space.weme.remix.util.StrUtils;
@@ -30,14 +32,14 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private View.OnClickListener mListener;
     private View.OnClickListener mAvatarListener;
 
-    public MessageAdapter(Context context){
+    public MessageAdapter(Context context) {
         mContext = context;
         mListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String sendId = (String) v.getTag();
                 Intent i = new Intent(mContext, AtyMessageDetail.class);
-                i.putExtra(AtyMessageDetail.INTENT_ID,sendId);
+                i.putExtra(AtyMessageDetail.INTENT_ID, sendId);
                 mContext.startActivity(i);
             }
         };
@@ -45,21 +47,21 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             @Override
             public void onClick(View v) {
                 String sendId = (String) v.getTag();
-                Intent i = new Intent(mContext,AtyInfo.class);
-                i.putExtra(AtyInfo.ID_INTENT,sendId);
+                Intent i = new Intent(mContext, AtyInfo.class);
+                i.putExtra(AtyInfo.ID_INTENT, sendId);
                 mContext.startActivity(i);
             }
         };
     }
 
-    public void setMessageList(List<Message> m){
+    public void setMessageList(List<Message> m) {
         messageList = m;
     }
 
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(mContext).inflate(R.layout.aty_message_cell,parent,false);
+        View v = LayoutInflater.from(mContext).inflate(R.layout.aty_message_cell, parent, false);
         return new MessageViewHolder(v);
     }
 
@@ -76,11 +78,11 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         messageViewHolder.ivGender.setImageResource(isBoy ? R.mipmap.boy : R.mipmap.girl);
         messageViewHolder.tvInfo.setText(m.text);
         messageViewHolder.tvTime.setText(StrUtils.timeTransfer(m.lasttime));
-        if(m.unreadnum==0){
+        if (m.unreadnum == 0) {
             messageViewHolder.tvCount.setVisibility(View.INVISIBLE);
-        }else{
+        } else {
             messageViewHolder.tvCount.setVisibility(View.VISIBLE);
-            messageViewHolder.tvCount.setText(m.unreadnum+"");
+            messageViewHolder.tvCount.setText(m.unreadnum + "");
         }
         messageViewHolder.itemView.setTag(m.sendId);
         messageViewHolder.itemView.setOnClickListener(mListener);
@@ -88,25 +90,35 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public int getItemCount() {
-        return messageList==null?0:messageList.size();
+        return messageList == null ? 0 : messageList.size();
     }
-    public static class MessageViewHolder extends RecyclerView.ViewHolder{
+
+    public static class MessageViewHolder extends RecyclerView.ViewHolder {
+
+        @BindView(R.id.aty_message_cell_avatar)
         SimpleDraweeView avatar;
+
+        @BindView(R.id.aty_message_cell_name)
         TextView tvName;
+
+        @BindView(R.id.aty_message_cell_school)
         TextView tvSchool;
+
+        @BindView(R.id.aty_message_cell_gender)
         ImageView ivGender;
+
+        @BindView(R.id.aty_message_cell_info)
         TextView tvInfo;
+
+        @BindView(R.id.aty_message_cell_time)
         TextView tvTime;
+
+        @BindView(R.id.aty_message_cell_count)
         TextView tvCount;
+
         public MessageViewHolder(View itemView) {
             super(itemView);
-            avatar = (SimpleDraweeView) itemView.findViewById(R.id.aty_message_cell_avatar);
-            tvName = (TextView) itemView.findViewById(R.id.aty_message_cell_name);
-            tvSchool = (TextView) itemView.findViewById(R.id.aty_message_cell_school);
-            ivGender = (ImageView) itemView.findViewById(R.id.aty_message_cell_gender);
-            tvInfo = (TextView) itemView.findViewById(R.id.aty_message_cell_info);
-            tvTime = (TextView) itemView.findViewById(R.id.aty_message_cell_time);
-            tvCount = (TextView) itemView.findViewById(R.id.aty_message_cell_count);
+            ButterKnife.bind(this, itemView);
         }
     }
 

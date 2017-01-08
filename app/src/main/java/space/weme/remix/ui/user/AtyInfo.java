@@ -33,6 +33,7 @@ import com.facebook.drawee.backends.pipeline.Fresco;
 import com.facebook.drawee.generic.GenericDraweeHierarchy;
 import com.facebook.drawee.view.SimpleDraweeView;
 import com.facebook.imagepipeline.core.ImagePipeline;
+import com.google.gson.Gson;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -44,11 +45,14 @@ import java.util.List;
 import java.util.Map;
 
 import me.nereo.multi_image_selector.MultiImageSelectorActivity;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import space.weme.remix.APP;
 import space.weme.remix.R;
 import space.weme.remix.model.TimeLine;
-import space.weme.remix.model.User;
 import space.weme.remix.model.UserImage;
+import space.weme.remix.service.Services;
+import space.weme.remix.service.UserService;
 import space.weme.remix.ui.AtyImage;
 import space.weme.remix.ui.base.BaseActivity;
 import space.weme.remix.ui.community.AtyPost;
@@ -73,7 +77,7 @@ public class AtyInfo extends BaseActivity {
     private static final int REQUEST_AVATAR = 0xff;
 
     private String mId;
-    private User mUser;
+    private UserService.GetProfileByUserIdResp mUser;
     boolean isMe = false;
 
     private TextView mLikeCount;
@@ -196,7 +200,7 @@ public class AtyInfo extends BaseActivity {
     }
 
     private void visitUser() {
-        if(isMe) return;
+        if (isMe) return;
         ArrayMap<String, String> param = new ArrayMap<>();
         param.put("token", StrUtils.token());
         param.put("userid", mId);
@@ -239,8 +243,6 @@ public class AtyInfo extends BaseActivity {
         mPagerViews[0] = v0;
         mPagerViews[1] = v1;
         mPagerViews[2] = v2;
-
-
     }
 
     private void configView() {
@@ -254,22 +256,22 @@ public class AtyInfo extends BaseActivity {
     private void configView1() {
         final TagView tagView = (TagView) mPagerViews[0].findViewById(R.id.tag_view);
         final TagView.TagAdapter adapter = new TagView.TagAdapter(this);
-        ArrayMap<String,String> params = new ArrayMap<>();
-        params.put("token",StrUtils.token());
-        params.put("userid",mId);
-        OkHttpUtils.post(StrUtils.GET_TAGS_BY_ID,params,TAG,new OkHttpUtils.SimpleOkCallBack(){
+        ArrayMap<String, String> params = new ArrayMap<>();
+        params.put("token", StrUtils.token());
+        params.put("userid", mId);
+        OkHttpUtils.post(StrUtils.GET_TAGS_BY_ID, params, TAG, new OkHttpUtils.SimpleOkCallBack() {
             @Override
             public void onResponse(String s) {
-                JSONObject j = OkHttpUtils.parseJSON(AtyInfo.this,s);
-                if(j == null) return;
+                JSONObject j = OkHttpUtils.parseJSON(AtyInfo.this, s);
+                if (j == null) return;
                 JSONObject result = j.optJSONObject("result");
-                if(result == null) return;
+                if (result == null) return;
                 JSONObject tags = result.optJSONObject("tags");
-                if(tags == null) return;
+                if (tags == null) return;
                 JSONArray tagsArray = tags.optJSONArray("custom");
-                if(tagsArray == null) return;
+                if (tagsArray == null) return;
                 ArrayList<String> tagList = new ArrayList<>();
-                for(int i = 0; i<tagsArray.length(); i++){
+                for (int i = 0; i < tagsArray.length(); i++) {
                     tagList.add(tagsArray.optString(i));
                 }
                 adapter.setTags(tagList);
@@ -361,93 +363,92 @@ public class AtyInfo extends BaseActivity {
         }
 
         tagView.setAdapter(adapter);
+        Services.userService()
+                .getProfileByUserId(new UserService.GetProfileByUserId(StrUtils.token(), mId))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "getProfileByUserId: " + resp.toString());
+                    if (!"successful".equals(resp.getState())) {
+                        finish();
+                    } else {
+                        mUser = resp;
+                        birthFlag = resp.getBirthFlag();
+                        followFlag = resp.getFollowFlag();
+                        mTvConstellation.setText(resp.getConstellation());
+                        boolean male = getResources().getString(R.string.male).equals(mUser.getGender());
+                        mIvGender.setImageResource(male ? R.mipmap.boy : R.mipmap.girl);
+                        TextView tvName = (TextView) mPagerViews[0].findViewById(R.id.aty_info_name);
+                        tvName.setText(resp.getName());
+                        TextView tvBirth = (TextView) mPagerViews[0].findViewById(R.id.aty_info_birth);
+                        tvBirth.setText(resp.getBirthday());
 
+                        TextView tvSchool = (TextView) mPagerViews[0].findViewById(R.id.aty_info_school);
+                        tvSchool.setText(resp.getSchool());
+                        TextView tvEducation = (TextView) mPagerViews[0].findViewById(R.id.aty_info_education);
+                        tvEducation.setText(resp.getDegree());
+                        TextView tvMajor = (TextView) mPagerViews[0].findViewById(R.id.aty_info_major);
+                        tvMajor.setText(resp.getDepartment());
 
-        ArrayMap<String, String> param = new ArrayMap<>();
-        param.put("token", StrUtils.token());
-        param.put("id", mId);
-        OkHttpUtils.post(StrUtils.GET_PROFILE_BY_ID, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
-            @Override
-            public void onResponse(String s) {
-                JSONObject j = OkHttpUtils.parseJSON(AtyInfo.this, s);
-                if (j == null) {
-                    finish();
-                    return;
-                }
-                User user = User.fromJSON(j);
-                mUser = user;
-                birthFlag = j.optInt("birthflag");
-                followFlag = j.optInt("followflag");
-                mTvConstellation.setText(user.constellation);
-                boolean male = getResources().getString(R.string.male).equals(mUser.gender);
-                mIvGender.setImageResource(male ? R.mipmap.boy : R.mipmap.girl);
-                TextView tvName = (TextView) mPagerViews[0].findViewById(R.id.aty_info_name);
-                tvName.setText(user.name);
-                TextView tvBirth = (TextView) mPagerViews[0].findViewById(R.id.aty_info_birth);
-                tvBirth.setText(user.birthday);
+                        TextView tvHome = (TextView) mPagerViews[0].findViewById(R.id.aty_info_home);
+                        tvHome.setText(resp.getHometown());
 
-                TextView tvSchool = (TextView) mPagerViews[0].findViewById(R.id.aty_info_school);
-                tvSchool.setText(user.school);
-                TextView tvEducation = (TextView) mPagerViews[0].findViewById(R.id.aty_info_education);
-                tvEducation.setText(user.degree);
-                TextView tvMajor = (TextView) mPagerViews[0].findViewById(R.id.aty_info_major);
-                tvMajor.setText(user.department);
+                        TextView tvQQ = (TextView) mPagerViews[0].findViewById(R.id.aty_info_qq);
+                        tvQQ.setText(resp.getQq());
 
-                TextView tvHome = (TextView) mPagerViews[0].findViewById(R.id.aty_info_home);
-                tvHome.setText(user.hometown);
+                        TextView tvWeChat = (TextView) mPagerViews[0].findViewById(R.id.aty_info_we_chat);
+                        tvWeChat.setText(resp.getWechat());
 
-                TextView tvQQ = (TextView) mPagerViews[0].findViewById(R.id.aty_info_qq);
-                tvQQ.setText(user.qq);
-
-                TextView tvWeChat = (TextView) mPagerViews[0].findViewById(R.id.aty_info_we_chat);
-                tvWeChat.setText(user.wechat);
-
-                final Button btnFollow = (Button) mPagerViews[0].findViewById(R.id.aty_info_follow_btn);
-                LinearLayout llBtn = (LinearLayout) mPagerViews[0].findViewById(R.id.aty_info_view1_btn);
-                if (mId.equals(StrUtils.id())) {
-                    llBtn.setVisibility(View.GONE);
-                } else {
-                    llBtn.setVisibility(View.VISIBLE);
-                    switch (followFlag) {
-                        case 1:
-                        case 3:
-                            btnFollow.setText(R.string.unfollow);
-                            break;
-                        case 0:
-                        case 2:
-                            btnFollow.setText(R.string.add_follow);
-                    }
-                    btnFollow.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            if (followFlag == 1 || followFlag == 3) {
-                                unfollow();
-                            } else {
-                                follow();
+                        final Button btnFollow = (Button) mPagerViews[0].findViewById(R.id.aty_info_follow_btn);
+                        LinearLayout llBtn = (LinearLayout) mPagerViews[0].findViewById(R.id.aty_info_view1_btn);
+                        if (mId.equals(StrUtils.id())) {
+                            llBtn.setVisibility(View.GONE);
+                        } else {
+                            llBtn.setVisibility(View.VISIBLE);
+                            switch (followFlag) {
+                                case 1:
+                                case 3:
+                                    btnFollow.setText(R.string.unfollow);
+                                    break;
+                                case 0:
+                                case 2:
+                                    btnFollow.setText(R.string.add_follow);
                             }
+                            btnFollow.setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    if (followFlag == 1 || followFlag == 3) {
+                                        unfollow();
+                                    } else {
+                                        follow();
+                                    }
+                                }
+                            });
+                            mPagerViews[0].findViewById(R.id.aty_info_message_btn).setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    sendMessage();
+                                }
+                            });
                         }
-                    });
-                    mPagerViews[0].findViewById(R.id.aty_info_message_btn).setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            sendMessage();
-                        }
-                    });
-                }
-            }
-        });
-
+                    }
+                }, ex -> {
+                    Log.e(TAG, "getProfileByUserId: " + ex.getMessage());
+                    Toast.makeText(AtyInfo.this,
+                            R.string.network_error,
+                            Toast.LENGTH_SHORT).show();
+                });
     }
 
-    private void uploadTags(List<String> tags){
+    private void uploadTags(List<String> tags) {
         JSONObject j = new JSONObject();
-        try{
-            j.put("token",StrUtils.token());
+        try {
+            j.put("token", StrUtils.token());
             JSONObject tagObject = new JSONObject();
             JSONArray tagArray = new JSONArray(tags);
-            tagObject.put("custom",tagArray);
-            j.put("tags",tagObject);
-        }catch (JSONException e){
+            tagObject.put("custom", tagArray);
+            j.put("tags", tagObject);
+        } catch (JSONException e) {
             return;
         }
         LogUtils.d(TAG, "uploadTags: param: " + j.toString());
@@ -574,7 +575,7 @@ public class AtyInfo extends BaseActivity {
         getUserImages(0);
 
         FloatingActionButton fab = (FloatingActionButton) mPagerViews[2].findViewById(R.id.fab);
-        if(isMe) {
+        if (isMe) {
             fab.setVisibility(View.VISIBLE);
             fab.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -582,12 +583,12 @@ public class AtyInfo extends BaseActivity {
                     uploadAvatar();
                 }
             });
-        }else{
+        } else {
             fab.setVisibility(View.GONE);
         }
     }
 
-    private void uploadAvatar(){
+    private void uploadAvatar() {
         Intent intent = new Intent(AtyInfo.this, MultiImageSelectorActivity.class);
         intent.putExtra(MultiImageSelectorActivity.EXTRA_SHOW_CAMERA, true);
         intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_MODE, MultiImageSelectorActivity.MODE_MULTI);
@@ -595,7 +596,7 @@ public class AtyInfo extends BaseActivity {
     }
 
     private void getUserImages(final int previous_id) {
-        if(page_3_previous_id<0) return;
+        if (page_3_previous_id < 0) return;
         ArrayMap<String, String> param = new ArrayMap<>();
         param.put("token", StrUtils.token());
         param.put("userid", mId);
@@ -624,11 +625,11 @@ public class AtyInfo extends BaseActivity {
                 for (int i = 0; i < result.length(); i++) {
                     userImageList.add(UserImage.fromJSON(result.optJSONObject(i)));
                 }
-                if(userImageList.size()==0){
+                if (userImageList.size() == 0) {
                     page_3_previous_id = -1;
                     return;
                 }
-                page_3_previous_id = Integer.parseInt(userImageList.get(userImageList.size()-1).id);
+                page_3_previous_id = Integer.parseInt(userImageList.get(userImageList.size() - 1).id);
                 if (preCount == 0) {
                     mUserImageAdapter.notifyDataSetChanged();
                 } else {
@@ -856,7 +857,7 @@ public class AtyInfo extends BaseActivity {
                                 changeBackground();
                             } else if (v.getId() == R.id.aty_info_option_edit_info) {
                                 editMyInfo();
-                            }else if(v.getId() == R.id.aty_info_option_audio_record){
+                            } else if (v.getId() == R.id.aty_info_option_audio_record) {
                                 audioRecord();
                             }
                             dialog.dismiss();
@@ -912,13 +913,13 @@ public class AtyInfo extends BaseActivity {
         Intent i = new Intent(AtyInfo.this, AtyEditInfo.class);
         i.putExtra(AtyEditInfo.INTENT_EDIT, true);
         if (mUser != null) {
-            i.putExtra(AtyEditInfo.INTENT_INFO, mUser.toJSONString());
+            i.putExtra(AtyEditInfo.INTENT_INFO, (new Gson()).toJson(mUser));
         }
         startActivity(i);
     }
 
-    private void audioRecord(){
-        LogUtils.i(TAG,"audio record");
+    private void audioRecord() {
+        LogUtils.i(TAG, "audio record");
         Intent i = new Intent(AtyInfo.this, AtyAudioRecord.class);
         startActivity(i);
     }
@@ -966,24 +967,24 @@ public class AtyInfo extends BaseActivity {
                     imagePipeline.evictFromCache(Uri.parse(StrUtils.backgroundForID(mId)));
                 }
             });
-        }else if(requestCode == REQUEST_AVATAR){
+        } else if (requestCode == REQUEST_AVATAR) {
             final LoadingPrompt prompt = new LoadingPrompt(AtyInfo.this);
-            List<String> path=data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
-            if (path!=null&&!path.isEmpty()){
-                Map<String,String> map=new ArrayMap<>();
+            List<String> path = data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
+            if (path != null && !path.isEmpty()) {
+                Map<String, String> map = new ArrayMap<>();
                 map.put("token", StrUtils.token());
-                map.put("type","-16");
+                map.put("type", "-16");
                 final int total = path.size();
                 final int[] cur = {0};
-                prompt.show(getWindow().getDecorView(),"正在上传图片");
-                for (int i=0;i<path.size();i++){
+                prompt.show(getWindow().getDecorView(), "正在上传图片");
+                for (int i = 0; i < path.size(); i++) {
                     OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, map, path.get(i), StrUtils.MEDIA_TYPE_IMG, TAG, new OkHttpUtils.SimpleOkCallBack() {
                         @Override
                         public void onResponse(String s) {
                             JSONObject j = OkHttpUtils.parseJSON(AtyInfo.this, s);
                             if (j != null) {
                                 cur[0]++;
-                                if(cur[0]==total){
+                                if (cur[0] == total) {
                                     prompt.dismiss();
                                     configView3();
                                 }

@@ -111,14 +111,14 @@ public class AtySearchActivity extends SwipeActivity {
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             RecyclerView.ViewHolder vh;
             View v = LayoutInflater.from(AtySearchActivity.this).inflate(R.layout.fgt_activity_item, parent, false);
-            vh = new VH(v);
+            vh = new ViewHolder(v);
             return vh;
         }
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             Activity activity = mList.get(position);
-            VH item = (VH) holder;
+            ViewHolder item = (ViewHolder) holder;
             item.mTvTitle.setText(activity.getTitle());
             item.mAvatar.setImageURI(Uri.parse(StrUtils.thumForID(activity.getAuthorID() + "")));
             String count = activity.getSignNumber() + "/" + activity.getCapacity();
@@ -132,7 +132,7 @@ public class AtySearchActivity extends SwipeActivity {
             return mList.size();
         }
 
-        class VH extends RecyclerView.ViewHolder {
+        class ViewHolder extends RecyclerView.ViewHolder {
 
             @BindView(R.id.fgt_activity_item_image)
             SimpleDraweeView mAvatar;
@@ -149,7 +149,7 @@ public class AtySearchActivity extends SwipeActivity {
             @BindView(R.id.fgt_activity_item_location)
             TextView mTvLocation;
 
-            public VH(View itemView) {
+            public ViewHolder(View itemView) {
                 super(itemView);
                 itemView.setOnClickListener(new View.OnClickListener() {
                     @Override

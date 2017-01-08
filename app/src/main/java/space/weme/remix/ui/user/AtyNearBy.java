@@ -4,7 +4,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.v4.util.ArrayMap;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +14,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
@@ -36,16 +37,16 @@ import com.amap.api.services.nearby.NearbySearchResult;
 import com.amap.api.services.nearby.UploadInfo;
 import com.facebook.drawee.view.SimpleDraweeView;
 
-import org.json.JSONObject;
-
 import java.util.List;
 
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import space.weme.remix.R;
-import space.weme.remix.model.User;
+import space.weme.remix.service.Services;
+import space.weme.remix.service.UserService;
 import space.weme.remix.ui.base.BaseActivity;
 import space.weme.remix.util.DimensionUtils;
 import space.weme.remix.util.LogUtils;
-import space.weme.remix.util.OkHttpUtils;
 import space.weme.remix.util.StrUtils;
 
 /**
@@ -67,6 +68,7 @@ public class AtyNearBy extends BaseActivity {
 
     private ListView listView;
     private Adapter adapter = new Adapter();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,12 +89,12 @@ public class AtyNearBy extends BaseActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String strId = ((NearbyInfo)parent.getAdapter().getItem(position)).getUserID();
+                String strId = ((NearbyInfo) parent.getAdapter().getItem(position)).getUserID();
                 showUser(strId);
             }
         });
         mLocationClient = new AMapLocationClient(getApplicationContext());
-        mLocationListener = new AMapLocationListener(){
+        mLocationListener = new AMapLocationListener() {
             @Override
             public void onLocationChanged(AMapLocation aMapLocation) {
                 LogUtils.i(TAG, "location changed: " + aMapLocation.toString());
@@ -118,21 +120,22 @@ public class AtyNearBy extends BaseActivity {
         search = NearbySearch.getInstance(getApplicationContext());
         mNearbyListener = new NearbySearch.NearbyListener() {
             @Override
-            public void onUserInfoCleared(int i) {      }
+            public void onUserInfoCleared(int i) {
+            }
 
             @Override
             public void onNearbyInfoSearched(NearbySearchResult nearbySearchResult, int i) {
-                if(nearbySearchResult==null){
+                if (nearbySearchResult == null) {
                     LogUtils.i(TAG, "nearBy null");
-                }else {
+                } else {
                     List<NearbyInfo> list = nearbySearchResult.getNearbyInfoList();
-                    LogUtils.i(TAG,"size: "+list.size());
+                    LogUtils.i(TAG, "size: " + list.size());
                     BitmapDescriptor descriptor = BitmapDescriptorFactory.fromResource(R.mipmap.map_marker);
-                    for(NearbyInfo info : list){
+                    for (NearbyInfo info : list) {
                         LogUtils.i(TAG, "id: " + info.getUserID() + " " + info.getDistance());
                         MarkerOptions markerOption = new MarkerOptions();
                         markerOption.position(new LatLng(info.getPoint().getLatitude(),
-                                info.getPoint().getLongitude())).icon(descriptor).title(info.getDistance()+"");
+                                info.getPoint().getLongitude())).icon(descriptor).title(info.getDistance() + "");
                         Marker marker = aMap.addMarker(markerOption);
                         marker.setObject(info);//这里可以存储用户数据
                     }
@@ -140,9 +143,10 @@ public class AtyNearBy extends BaseActivity {
                     adapter.notifyDataSetChanged();
                 }
             }
+
             @Override
             public void onNearbyInfoUploaded(int i) {
-                LogUtils.i(TAG,"onNearbyInfoUploaded");
+                LogUtils.i(TAG, "onNearbyInfoUploaded");
             }
         };
         search.addNearbyListener(mNearbyListener);
@@ -153,28 +157,28 @@ public class AtyNearBy extends BaseActivity {
                 Object o = marker.getObject();
                 if (!(o instanceof NearbyInfo)) return null;
                 NearbyInfo info = (NearbyInfo) o;
-                View v = LayoutInflater.from(AtyNearBy.this).inflate(R.layout.aty_near_by_info,null);
+                View v = LayoutInflater.from(AtyNearBy.this).inflate(R.layout.aty_near_by_info, null);
                 SimpleDraweeView view = (SimpleDraweeView) v.findViewById(R.id.aty_near_by_info_avatar);
                 view.setImageURI(Uri.parse(StrUtils.thumForID(info.getUserID())));
-                String distance = getString(R.string.distance_for_you) + String.format("%.1f km",(info.getDistance())/1000f);
+                String distance = getString(R.string.distance_for_you) + String.format("%.1f km", (info.getDistance()) / 1000f);
                 TextView tv = (TextView) v.findViewById(R.id.aty_near_by_info_distance);
                 tv.setText(distance);
                 TextView time = (TextView) v.findViewById(R.id.aty_near_by_info_time);
-                LogUtils.i(TAG,"system.cu：" + System.currentTimeMillis() + "info.getTimestamp(): "+ info.getTimeStamp());
-                time.setText(StrUtils.timeTransfer(System.currentTimeMillis()/1000 - info.getTimeStamp()));
+                LogUtils.i(TAG, "system.cu：" + System.currentTimeMillis() + "info.getTimestamp(): " + info.getTimeStamp());
+                time.setText(StrUtils.timeTransfer(System.currentTimeMillis() / 1000 - info.getTimeStamp()));
                 return v;
             }
 
             @Override
             public View getInfoContents(Marker marker) {
-                LogUtils.i(TAG,"getInfoContents");
+                LogUtils.i(TAG, "getInfoContents");
                 return null;
             }
         });
         aMap.setOnMapClickListener(new AMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
-                if(currentMarker!=null){
+                if (currentMarker != null) {
                     currentMarker.hideInfoWindow();
                 }
             }
@@ -182,16 +186,14 @@ public class AtyNearBy extends BaseActivity {
     }
 
 
-
-
-    private void showLocation(double lat, double lon){
-        LatLng latLng = new LatLng(lat,lon);
+    private void showLocation(double lat, double lon) {
+        LatLng latLng = new LatLng(lat, lon);
         // zoom level is in 4-20
         CameraUpdate update = CameraUpdateFactory.newLatLngZoom(latLng, 16);
         aMap.moveCamera(update);
     }
 
-    private void uploadUserInfo(double lat, double lon){
+    private void uploadUserInfo(double lat, double lon) {
         UploadInfo loadInfo = new UploadInfo();
         loadInfo.setCoordType(NearbySearch.AMAP);
         loadInfo.setPoint(new LatLonPoint(lat, lon));
@@ -210,9 +212,6 @@ public class AtyNearBy extends BaseActivity {
         search.addNearbyListener(mNearbyListener);
         search.searchNearbyInfoAsyn(query);
     }
-
-
-
 
 
     @Override
@@ -237,7 +236,7 @@ public class AtyNearBy extends BaseActivity {
     protected void onDestroy() {
         super.onDestroy();
         mapView.onDestroy();
-        if(mLocationClient!=null){
+        if (mLocationClient != null) {
             mLocationClient.stopLocation();
         }
     }
@@ -249,8 +248,9 @@ public class AtyNearBy extends BaseActivity {
     }
 
 
-    class Adapter extends BaseAdapter{
+    class Adapter extends BaseAdapter {
         List<NearbyInfo> list;
+
         @Override
         public int getCount() {
             return list == null ? 0 : list.size();
@@ -268,13 +268,13 @@ public class AtyNearBy extends BaseActivity {
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-            if(convertView == null) {
+            if (convertView == null) {
                 convertView = LayoutInflater.from(AtyNearBy.this).inflate(R.layout.aty_near_by_user, parent, false);
             }
             NearbyInfo info = (NearbyInfo) getItem(position);
             String id = info.getUserID();
             SimpleDraweeView avatar = (SimpleDraweeView) convertView.findViewById(R.id.aty_friend_cell_avatar);
-            final TextView  name = (TextView) convertView.findViewById(R.id.aty_friend_cell_name);
+            final TextView name = (TextView) convertView.findViewById(R.id.aty_friend_cell_name);
             final ImageView gender = (ImageView) convertView.findViewById(R.id.aty_friend_cell_gender);
             final TextView school = (TextView) convertView.findViewById(R.id.aty_friend_cell_school);
             avatar.setImageURI(Uri.parse(StrUtils.thumForID(id)));
@@ -282,32 +282,33 @@ public class AtyNearBy extends BaseActivity {
             TextView tvDistance = (TextView) convertView.findViewById(R.id.aty_near_by_cell_distance);
             tvDistance.setText(String.format("%.1f km", (info.getDistance()) / 1000f));
 
-            ArrayMap<String, String> param = new ArrayMap<>();
-            param.put("token", StrUtils.token());
-            param.put("id", StrUtils.id());
-            OkHttpUtils.post(StrUtils.GET_PROFILE_BY_ID,param,TAG,new OkHttpUtils.SimpleOkCallBack() {
-                @Override
-                public void onResponse(String s) {
-                    //LogUtils.i(TAG, s);
-                    JSONObject j = OkHttpUtils.parseJSON(AtyNearBy.this, s);
-                    if (j == null) {
-                        finish();
-                        return;
-                    }
-                    User user = User.fromJSON(j);
-                    name.setText(user.name);
-                    boolean isBoy = user.gender.equals(getResources().getString(R.string.boy));
-                    gender.setImageResource(isBoy ? R.mipmap.boy : R.mipmap.girl);
-                    school.setText(user.school);
-                }
-            });
+            Services.userService()
+                    .getProfileByUserId(new UserService.GetProfileByUserId(StrUtils.token(), StrUtils.id()))
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(resp -> {
+                        Log.d(TAG, "getProfileByUserId: " + resp.toString());
+                        if (resp.getId() == 0) {
+                            finish();
+                        } else {
+                            name.setText(resp.getName());
+                            boolean isBoy = resp.getGender().equals(getResources().getString(R.string.boy));
+                            gender.setImageResource(isBoy ? R.mipmap.boy : R.mipmap.girl);
+                            school.setText(resp.getSchool());
+                        }
+                    }, ex -> {
+                        Log.e(TAG, "getProfileByUserId: " + ex.getMessage());
+                        Toast.makeText(AtyNearBy.this,
+                                R.string.network_error,
+                                Toast.LENGTH_SHORT).show();
+                    });
             return convertView;
         }
     }
 
-    private void showUser(String id){
-        Intent i = new Intent(AtyNearBy.this,AtyInfo.class);
-        i.putExtra(AtyInfo.ID_INTENT,id);
+    private void showUser(String id) {
+        Intent i = new Intent(AtyNearBy.this, AtyInfo.class);
+        i.putExtra(AtyInfo.ID_INTENT, id);
         startActivity(i);
     }
 }
