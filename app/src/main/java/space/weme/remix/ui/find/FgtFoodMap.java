@@ -230,7 +230,7 @@ public class FgtFoodMap extends BaseFragment {
                     public void onClick(View v) {
                         int position = getAdapterPosition();
                         aty.fgtAddFood.poiItem = list.get(position);
-                        aty.switchToFragment(aty.fgtAddFood);
+                        aty.setFragment(aty.fgtAddFood);
                     }
                 });
             }

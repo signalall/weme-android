@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.v4.util.ArrayMap;
 import android.view.View;
@@ -14,20 +13,20 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.facebook.drawee.backends.pipeline.Fresco;
-
 import org.json.JSONObject;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import me.nereo.multi_image_selector.MultiImageSelectorActivity;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import space.weme.remix.R;
 import space.weme.remix.ui.base.BaseActivity;
-import space.weme.remix.util.BitmapUtils;
 import space.weme.remix.util.LogUtils;
 import space.weme.remix.util.OkHttpUtils;
 import space.weme.remix.util.StrUtils;
@@ -36,7 +35,11 @@ import space.weme.remix.util.StrUtils;
  * Created by Liujilong on 2016/3/3.
  * liujilong.me@gmail.com
  */
-public class AtyAddFood extends BaseActivity{
+public class AtyAddFood extends BaseActivity
+        implements
+        FgtAddFood.OnAddLocationButtonClickListener,
+        FgtAddFood.OnAddPriceButtonClickListener,
+        FgtAddFood.OnAddPictureButtonClickListener {
     private static final String TAG = "AtyAddFood";
 
     static final int REQUEST_IMAGE = 0x12;
@@ -61,15 +64,11 @@ public class AtyAddFood extends BaseActivity{
         setContentView(R.layout.aty_add_food);
         ButterKnife.bind(this);
 
-        tvTitle.setText(R.string.edit_food_card);
-        tvRight.setText(R.string.finish);
-
         fgtAddFood = FgtAddFood.newInstance();
         fgtPrice = FgtPrice.newInstance();
         fgtMap = FgtFoodMap.newInstance();
 
-        getFragmentManager().beginTransaction().add(R.id.frame_container,fgtAddFood).commit();
-
+        setFragment(fgtAddFood);
     }
 
     @OnClick(R.id.right_text)
@@ -77,37 +76,18 @@ public class AtyAddFood extends BaseActivity{
         uploadFood();
     }
 
-    protected void switchToFragment(Fragment fragment){
-        getFragmentManager().beginTransaction().replace(R.id.frame_container, fragment).commit();
-        if(fragment == fgtAddFood){
-            tvTitle.setText(R.string.edit_food_card);
-            tvRight.setVisibility(View.VISIBLE);
-        }else if(fragment == fgtPrice){
-            tvTitle.setText(R.string.price_range);
-            tvRight.setVisibility(View.GONE);
-        }else if(fragment == fgtMap){
-            tvTitle.setText(R.string.location);
-            tvRight.setVisibility(View.GONE);
-        }
-    }
-
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         LogUtils.i(TAG, "onActivityResult");
-        if(resultCode != RESULT_OK){
+        if (resultCode != RESULT_OK) {
             return;
         }
-        if(requestCode == REQUEST_IMAGE){
-            List<String> paths=data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
+        if (requestCode == REQUEST_IMAGE) {
+            List<String> paths = data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
             performCrop(paths.get(0));
             //mDrawAvatar.setImageURI(Uri.parse("file://"+mAvatarPath));
-        }else if (requestCode == REQUEST_CROP){
-            Fresco.getImagePipeline().evictFromCache(Uri.parse("file://" + StrUtils.cropFilePath));
-            int width = fgtAddFood.pictureDrawee.getWidth();
-            int height = fgtAddFood.pictureDrawee.getHeight();
-            BitmapUtils.showResizedPicture(fgtAddFood.pictureDrawee,Uri.parse("file://" + StrUtils.cropFilePath), width, height);
-            fgtAddFood.pictureChosen = true;
+        } else if (requestCode == REQUEST_CROP) {
+            fgtAddFood.setPicture();
         }
     }
 
@@ -145,76 +125,112 @@ public class AtyAddFood extends BaseActivity{
         }
     }
 
-    private void uploadFood(){
-        if(fgtAddFood.etTitle.getText().length() == 0){
-            Toast.makeText(this,R.string.please_input_food_title,Toast.LENGTH_SHORT).show();
+    private void uploadFood() {
+        if (fgtAddFood.etTitle.getText().length() == 0) {
+            Toast.makeText(this, R.string.please_input_food_title, Toast.LENGTH_SHORT).show();
             return;
         }
-        if(fgtAddFood.poiItem == null){
-            Toast.makeText(this,R.string.please_choose_location, Toast.LENGTH_SHORT).show();
+        if (fgtAddFood.poiItem == null) {
+            Toast.makeText(this, R.string.please_choose_location, Toast.LENGTH_SHORT).show();
             return;
         }
-        if(fgtAddFood.price == null){
-            Toast.makeText(this,R.string.please_choose_price, Toast.LENGTH_SHORT).show();
+        if (fgtAddFood.price == null) {
+            Toast.makeText(this, R.string.please_choose_price, Toast.LENGTH_SHORT).show();
             return;
         }
-        if(!fgtAddFood.pictureChosen){
-            Toast.makeText(this,R.string.please_choose_picutre, Toast.LENGTH_SHORT).show();
+        if (!fgtAddFood.pictureChosen) {
+            Toast.makeText(this, R.string.please_choose_picutre, Toast.LENGTH_SHORT).show();
             return;
         }
-        ArrayMap<String,String> map = new ArrayMap<>();
+        ArrayMap<String, String> map = new ArrayMap<>();
         map.put("token", StrUtils.token());
         map.put("title", fgtAddFood.etTitle.getText().toString());
         map.put("comment", fgtAddFood.etComment.getText().toString());
-        map.put("location",fgtAddFood.poiItem.getTitle()+" "+fgtAddFood.poiItem.getSnippet());
-        map.put("latitude",Double.toString(fgtAddFood.poiItem.getLatLonPoint().getLatitude()));
-        map.put("longitude",Double.toString(fgtAddFood.poiItem.getLatLonPoint().getLongitude()));
+        map.put("location", fgtAddFood.poiItem.getTitle() + " " + fgtAddFood.poiItem.getSnippet());
+        map.put("latitude", Double.toString(fgtAddFood.poiItem.getLatLonPoint().getLatitude()));
+        map.put("longitude", Double.toString(fgtAddFood.poiItem.getLatLonPoint().getLongitude()));
         map.put("price", fgtAddFood.price);
-        OkHttpUtils.post(StrUtils.PUBLISH_CARD,map,TAG,new OkHttpUtils.SimpleOkCallBack(){
+        OkHttpUtils.post(StrUtils.PUBLISH_CARD, map, TAG, new OkHttpUtils.SimpleOkCallBack() {
             @Override
             public void onResponse(String s) {
-                JSONObject j = OkHttpUtils.parseJSON(AtyAddFood.this,s);
-                if(j == null){
+                JSONObject j = OkHttpUtils.parseJSON(AtyAddFood.this, s);
+                if (j == null) {
                     return;
                 }
                 String id = j.optString("id");
-                ArrayMap<String,String> params = new ArrayMap<>();
+                ArrayMap<String, String> params = new ArrayMap<>();
                 params.put("token", StrUtils.token());
-                params.put("type","-11");
-                params.put("foodcardid",id);
-                OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL,params,StrUtils.cropFilePath,StrUtils.MEDIA_TYPE_IMG,TAG,new OkHttpUtils.SimpleOkCallBack(){
+                params.put("type", "-11");
+                params.put("foodcardid", id);
+                OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, params, StrUtils.cropFilePath, StrUtils.MEDIA_TYPE_IMG, TAG, new OkHttpUtils.SimpleOkCallBack() {
                     @Override
                     public void onResponse(String s) {
-                        JSONObject j = OkHttpUtils.parseJSON(AtyAddFood.this,s);
-                        if(j == null){
-                            Toast.makeText(AtyAddFood.this,R.string.upload_food_fail,Toast.LENGTH_SHORT).show();
+                        JSONObject j = OkHttpUtils.parseJSON(AtyAddFood.this, s);
+                        if (j == null) {
+                            Toast.makeText(AtyAddFood.this, R.string.upload_food_fail, Toast.LENGTH_SHORT).show();
                             return;
                         }
-                        Toast.makeText(AtyAddFood.this,R.string.upload_food_finish,Toast.LENGTH_SHORT).show();
-                        Handler handler = new Handler(getMainLooper());
-                        handler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                               finish();
-                            }
-                        },500);
+                        Toast.makeText(AtyAddFood.this, R.string.upload_food_finish, Toast.LENGTH_SHORT).show();
+
+                        rx.Observable.timer(500, TimeUnit.MILLISECONDS)
+                                .subscribeOn(Schedulers.io())
+                                .observeOn(AndroidSchedulers.mainThread())
+                                .subscribe(resp -> {
+                                    finish();
+                                });
                     }
                 });
             }
         });
     }
 
+    public void setFragment(Fragment frag) {
+        android.app.FragmentManager fm = getFragmentManager();
+        fm.beginTransaction()
+                .replace(R.id.frame_container, frag)
+                .commit();
+        if (frag == fgtAddFood) {
+            tvTitle.setText(R.string.edit_food_card);
+            tvRight.setVisibility(View.VISIBLE);
+        } else if (frag == fgtPrice) {
+            tvTitle.setText(R.string.price_range);
+            tvRight.setVisibility(View.GONE);
+        } else if (frag == fgtMap) {
+            tvTitle.setText(R.string.location);
+            tvRight.setVisibility(View.GONE);
+        }
+    }
+
     @Override
     public void onBackPressed() {
-        if(fgtAddFood.isVisible()){
+        if (fgtAddFood.isVisible()) {
             super.onBackPressed();
-        }else{
-            switchToFragment(fgtAddFood);
+        } else {
+            setFragment(fgtAddFood);
         }
     }
 
     @Override
     protected String tag() {
         return TAG;
+    }
+
+    @Override
+    public void onAddLocationButtonClick() {
+        setFragment(fgtMap);
+    }
+
+    @Override
+    public void onAddPriceButtonClick() {
+        setFragment(fgtPrice);
+    }
+
+    @Override
+    public void onAddPictureButtonClick() {
+        Intent intent = new Intent(this, MultiImageSelectorActivity.class);
+        intent.putExtra(MultiImageSelectorActivity.EXTRA_SHOW_CAMERA, true);
+        intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_COUNT, 1);
+        intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_MODE, MultiImageSelectorActivity.MODE_SINGLE);
+        startActivityForResult(intent, AtyAddFood.REQUEST_IMAGE);
     }
 }

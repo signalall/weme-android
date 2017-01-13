@@ -10,7 +10,6 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import butterknife.ButterKnife;
 import space.weme.remix.R;
 import space.weme.remix.ui.base.BaseFragment;
 
@@ -33,7 +32,6 @@ public class FgtPrice extends BaseFragment {
     private String[] array;
     private AtyAddFood aty;
 
-    @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fgt_food_price, container, false);
@@ -54,7 +52,7 @@ public class FgtPrice extends BaseFragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 aty.fgtAddFood.setPrice(array[position]);
-                aty.switchToFragment(aty.fgtAddFood);
+                aty.setFragment(aty.fgtAddFood);
             }
         });
         return v;

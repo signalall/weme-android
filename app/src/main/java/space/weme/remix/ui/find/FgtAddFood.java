@@ -1,9 +1,9 @@
 package space.weme.remix.ui.find;
 
-import android.content.Intent;
+import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,12 +12,16 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.amap.api.services.core.PoiItem;
+import com.facebook.drawee.backends.pipeline.Fresco;
 import com.facebook.drawee.view.SimpleDraweeView;
+
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import me.nereo.multi_image_selector.MultiImageSelectorActivity;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import space.weme.remix.R;
 import space.weme.remix.ui.base.BaseFragment;
 import space.weme.remix.util.BitmapUtils;
@@ -28,9 +32,29 @@ import space.weme.remix.util.StrUtils;
  * liujilong.me@gmail.com
  */
 public class FgtAddFood extends BaseFragment {
+
+
+    interface OnAddPictureButtonClickListener {
+        void onAddPictureButtonClick();
+    }
+
+    interface OnAddPriceButtonClickListener {
+        void onAddPriceButtonClick();
+    }
+
+    interface OnAddLocationButtonClickListener {
+        void onAddLocationButtonClick();
+    }
+
     private static final String TAG = "FgtAddFood";
 
-    AtyAddFood aty;
+    private Context mContext;
+
+    String price;
+
+    boolean pictureChosen = false;
+
+    PoiItem poiItem;
 
     @BindView(R.id.fgt_add_food_picture)
     SimpleDraweeView pictureDrawee;
@@ -53,10 +77,6 @@ public class FgtAddFood extends BaseFragment {
     @BindView(R.id.fgt_add_text_price)
     TextView tvPrice;
 
-    String price;
-    boolean pictureChosen = false;
-    PoiItem poiItem;
-
     public static FgtAddFood newInstance() {
         Bundle args = new Bundle();
         final FgtAddFood fragment = new FgtAddFood();
@@ -64,49 +84,76 @@ public class FgtAddFood extends BaseFragment {
         return fragment;
     }
 
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+    }
+
     @OnClick(R.id.fgt_add_food_picture)
     public void onPictureDraweeClick() {
-        Intent intent = new Intent(aty, MultiImageSelectorActivity.class);
-        intent.putExtra(MultiImageSelectorActivity.EXTRA_SHOW_CAMERA, true);
-        intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_COUNT, 1);
-        intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_MODE, MultiImageSelectorActivity.MODE_SINGLE);
-        aty.startActivityForResult(intent, AtyAddFood.REQUEST_IMAGE);
+        try {
+            ((OnAddPictureButtonClickListener) mContext).onAddPictureButtonClick();
+        } catch (ClassCastException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
     }
 
     @OnClick(R.id.fgt_add_food_price)
     public void onPriceClick() {
-        aty.switchToFragment(aty.fgtPrice);
+        try {
+            ((OnAddPriceButtonClickListener) mContext).onAddPriceButtonClick();
+        } catch (ClassCastException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
     }
 
     @OnClick(R.id.fgt_add_food_location)
     public void onLocationClick() {
-        aty.switchToFragment(aty.fgtMap);
+        try {
+            ((OnAddLocationButtonClickListener) mContext).onAddLocationButtonClick();
+        } catch (ClassCastException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
     }
 
-    @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fgt_add_food, container, false);
         ButterKnife.bind(this, v);
-        aty = (AtyAddFood) getActivity();
+        mContext = getActivity();
         return v;
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        if (price != null) {
-            tvPrice.setText(price);
-        }
-        if (pictureChosen) {
-            int width = pictureDrawee.getWidth();
-            int height = pictureDrawee.getHeight();
-            BitmapUtils.showResizedPicture(pictureDrawee, Uri.parse("file://" + StrUtils.cropFilePath), width, height);
-        }
-        if (poiItem != null) {
-            String location = poiItem.getTitle() + poiItem.getSnippet();
-            tvLocation.setText(location);
-        }
+        rx.Observable.timer(0, TimeUnit.SECONDS)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    if (price != null) {
+                        tvPrice.setText(price);
+                    }
+                    if (pictureChosen) {
+                        int width = pictureDrawee.getWidth();
+                        int height = pictureDrawee.getHeight();
+                        if (width > 0 && height > 0)
+                            BitmapUtils.showResizedPicture(pictureDrawee, Uri.parse("file://" + StrUtils.cropFilePath), width, height);
+                    }
+                    if (poiItem != null) {
+                        String location = poiItem.getTitle() + poiItem.getSnippet();
+                        tvLocation.setText(location);
+                    }
+                });
+
+    }
+
+    public void setPicture() {
+        Fresco.getImagePipeline().evictFromCache(Uri.parse("file://" + StrUtils.cropFilePath));
+        int width = pictureDrawee.getWidth();
+        int height = pictureDrawee.getHeight();
+        BitmapUtils.showResizedPicture(pictureDrawee, Uri.parse("file://" + StrUtils.cropFilePath), width, height);
+        pictureChosen = true;
     }
 
     void setPrice(String price) {

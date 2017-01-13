@@ -11,7 +11,6 @@ import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.v4.util.ArrayMap;
 import android.support.v7.widget.CardView;
 import android.util.DisplayMetrics;
@@ -32,12 +31,12 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
+import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.Optional;
+import rx.Observable;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -72,22 +71,31 @@ public class AtyDiscovery extends BaseActivity {
     private int state = STATE_FIRST;
 
     private Card mCard;
-    private FrameLayout flBackground;
+
+    Dialog dialog;
 
     private float mTranslationY;
-
 
     private boolean isLoading = false;
 
     private float preValue = 0;
 
     private List<User> userList;
+
     private int currentIndex = 0;
 
-    ExecutorService exec;
-    private Handler mHandler;
+    @BindView(R.id.aty_discovery_background)
+    FrameLayout flBackground;
 
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.aty_discovery);
+        ButterKnife.bind(this);
+        setupViews();
+    }
 
+    @Optional
     @OnClick(R.id.aty_discovery_back)
     public void onImageViewDiscoveryBackClick() {
         finish();
@@ -98,47 +106,39 @@ public class AtyDiscovery extends BaseActivity {
         ivMoreClicked();
     }
 
-    @Override
-    @SuppressWarnings("deprecation")
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.aty_discovery);
-        ButterKnife.bind(this);
-
-        exec = Executors.newSingleThreadExecutor();
-        mHandler = new Handler();
-        flBackground = (FrameLayout) findViewById(R.id.aty_discovery_background);
-
-        BitmapDrawable b = (BitmapDrawable) getResources().getDrawable(R.mipmap.spade_bk);
-        if (b != null) {
-            setBackground(b.getBitmap());
-        }
-
-        mCard = Card.fromXML(this, flBackground);
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(0, 0);
-        DisplayMetrics displayMetrics = DimensionUtils.getDisplay();
-
-        params.width = displayMetrics.widthPixels * 7 / 10;
-        params.height = params.width * 3 / 2;
-        params.gravity = Gravity.CENTER;
-        mCard.setLayoutParams(params);
-        mCard.setAvatarSize();
-        flBackground.addView(mCard);
-
-        mTranslationY = displayMetrics.heightPixels / 2 + 21 * displayMetrics.widthPixels / 40;
-        mCard.setTranslationY(mTranslationY);
-
-        CardView cardView = (CardView) findViewById(R.id.aty_discovery_card);
-        cardView.setLayoutParams(params);
-        cardView.setTranslationY(mTranslationY - DimensionUtils.dp2px(64));
-        userList = new ArrayList<>();
-    }
-
     @OnClick(R.id.aty_discovery_text)
     public void onDiscoveryTextClick() {
         if (state != STATE_ANIMATING) {
             startAnimation();
         }
+    }
+
+    @Optional
+    @OnClick(R.id.aty_discovery_option_cancel)
+    public void onDiscoveryOptionCancel() {
+        if (currentIndex >= userList.size()) return;
+        String id = userList.get(currentIndex).getId() + "";
+        dialog.dismiss();
+    }
+
+    @Optional
+    @OnClick(R.id.aty_discovery_option_follow)
+    public void onDiscoveryOptionFollow() {
+        if (currentIndex >= userList.size()) return;
+        String id = userList.get(currentIndex).getId() + "";
+        followUser(id);
+        dialog.dismiss();
+    }
+
+    @Optional
+    @OnClick(R.id.aty_discovery_option_message)
+    public void onDiscoveryOptionMessage() {
+        if (currentIndex >= userList.size()) return;
+        String id = userList.get(currentIndex).getId() + "";
+        Intent i = new Intent(AtyDiscovery.this, AtyMessageReply.class);
+        i.putExtra(AtyMessageReply.INTENT_ID, id);
+        startActivity(i);
+        dialog.dismiss();
     }
 
     public void showLikeEachOther(final User user) {
@@ -195,7 +195,28 @@ public class AtyDiscovery extends BaseActivity {
         d.show();
     }
 
-    Dialog dialog;
+    @SuppressWarnings("deprecation")
+    private void setupViews() {
+        mCard = Card.fromXML(this, flBackground);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(0, 0);
+        DisplayMetrics displayMetrics = DimensionUtils.getDisplay();
+        params.width = displayMetrics.widthPixels * 7 / 10;
+        params.height = params.width * 3 / 2;
+        params.gravity = Gravity.CENTER;
+        mCard.setLayoutParams(params);
+        mCard.setAvatarSize();
+        mTranslationY = displayMetrics.heightPixels / 2 + 21 * displayMetrics.widthPixels / 40;
+        mCard.setTranslationY(mTranslationY);
+        flBackground.addView(mCard);
+        BitmapDrawable b = (BitmapDrawable) getResources().getDrawable(R.mipmap.spade_bk);
+        if (b != null) {
+            setBackground(b.getBitmap());
+        }
+        CardView cardView = (CardView) findViewById(R.id.aty_discovery_card);
+        cardView.setLayoutParams(params);
+        cardView.setTranslationY(mTranslationY - DimensionUtils.dp2px(64));
+        userList = new ArrayList<>();
+    }
 
     private void ivMoreClicked() {
         if (state != STATE_READY) {
@@ -211,34 +232,6 @@ public class AtyDiscovery extends BaseActivity {
         wmlp.y = 0;   //y position
         wmlp.width = DimensionUtils.getDisplay().widthPixels;
         dialog.show();
-    }
-
-    @Optional
-    @OnClick(R.id.aty_discovery_option_cancel)
-    public void onDiscoveryOptionCancel() {
-        if (currentIndex >= userList.size()) return;
-        String id = userList.get(currentIndex).getId() + "";
-        dialog.dismiss();
-    }
-
-    @Optional
-    @OnClick(R.id.aty_discovery_option_follow)
-    public void onDiscoveryOptionFollow() {
-        if (currentIndex >= userList.size()) return;
-        String id = userList.get(currentIndex).getId() + "";
-        followUser(id);
-        dialog.dismiss();
-    }
-
-    @Optional
-    @OnClick(R.id.aty_discovery_option_message)
-    public void onDiscoveryOptionMessage() {
-        if (currentIndex >= userList.size()) return;
-        String id = userList.get(currentIndex).getId() + "";
-        Intent i = new Intent(AtyDiscovery.this, AtyMessageReply.class);
-        i.putExtra(AtyMessageReply.INTENT_ID, id);
-        startActivity(i);
-        dialog.dismiss();
     }
 
     private void followUser(String id) {
@@ -267,32 +260,31 @@ public class AtyDiscovery extends BaseActivity {
         setBackground(b, flBackground);
     }
 
-    @SuppressWarnings("deprecation")
     private void setBackground(final Bitmap b, final View v) {
-        LogUtils.i("Time", "Label 1 : " + System.currentTimeMillis());
+        Log.i("Time", "Label 1 : " + System.currentTimeMillis());
         if (b == null) {
             return;
         }
-        exec.execute(new Runnable() {
-            @Override
-            public void run() {
-                LogUtils.i("Time", "Label 2 : " + System.currentTimeMillis());
-                Bitmap sized = BitmapUtils.scale(b, 40, 40 * b.getHeight() / b.getWidth());
-                LogUtils.i("Time", "Label 3 : " + System.currentTimeMillis());
-                final int radius = 5;
-                final Bitmap blur = BitmapUtils.blur(sized, radius);
-                // important, clear cache of flBackground used in showLikeEachOther
-                flBackground.setDrawingCacheEnabled(false);
-                LogUtils.i("Time", "Label 4 : " + System.currentTimeMillis());
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        LogUtils.i("Time", "Label 5 : " + System.currentTimeMillis());
-                        v.setBackgroundDrawable(new BitmapDrawable(getResources(), blur));
-                    }
+        Observable
+                .<Bitmap>create(subscriber -> {
+                    Log.i("Time", "Label 2 : " + System.currentTimeMillis());
+                    Bitmap sized = BitmapUtils.scale(b, 40, 40 * b.getHeight() / b.getWidth());
+                    Log.i("Time", "Label 3 : " + System.currentTimeMillis());
+                    int radius = 5;
+                    Bitmap blur = BitmapUtils.blur(sized, radius);
+                    Log.i("Time", "Label 4 : " + System.currentTimeMillis());
+                    subscriber.onNext(blur);
+                })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(blur -> {
+                    // important, clear cache of flBackground used in showLikeEachOther
+                    flBackground.setDrawingCacheEnabled(false);
+                    LogUtils.i("Time", "Label 5 : " + System.currentTimeMillis());
+                    v.setBackgroundDrawable(new BitmapDrawable(getResources(), blur));
+                }, ex -> {
+
                 });
-            }
-        });
     }
 
 
@@ -415,6 +407,5 @@ public class AtyDiscovery extends BaseActivity {
         if (getRecommondUser != null) {
             getRecommondUser.unsubscribe();
         }
-        exec.shutdown();
     }
 }
