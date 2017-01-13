@@ -20,6 +20,7 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import me.imid.swipebacklayout.lib.SwipeBackLayout;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -220,6 +221,45 @@ public class AtyPost extends SwipeActivity {
     }
 
     /**
+     * 添加图片
+     */
+    @OnClick(R.id.activity_post_add_image)
+    public void onAddImageClick() {
+        Intent i = new Intent(AtyPost.this, AtyPostReply.class);
+        i.putExtra(AtyPostReply.INTENT_ID, mPostID);
+        i.putExtra(AtyPostReply.INTENT_CONTENT, mEditText.getText().toString());
+        startActivityForResult(i, REPLY_CODE);
+    }
+
+    /**
+     * 发送评论
+     */
+    @OnClick(R.id.activity_post_commit)
+    public void onPostCommentClick() {
+        if (mEditText.getText().length() == 0) {
+            return;
+        }
+        mProgressDialog = ProgressDialog.show(AtyPost.this, null, getResources().getString(R.string.commenting));
+        Services.postService()
+                .commentToPost(new PostService.CommentToPost(StrUtils.token(),
+                        mEditText.getText().toString(),
+                        mPostID))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "commentToPost: " + resp.toString());
+                    mProgressDialog.dismiss();
+                    LogUtils.i(TAG, resp.toString());
+                    clearChatView();
+                    refreshAll();
+                }, ex -> {
+                    Log.e(TAG, "commentToPost: " + ex.getMessage());
+                    mProgressDialog.dismiss();
+                });
+    }
+
+
+    /**
      * 评价Post
      */
     void commentToPost() {
@@ -227,35 +267,6 @@ public class AtyPost extends SwipeActivity {
         mAddImage.setVisibility(View.VISIBLE);
         mEditText.setText("");
         mEditText.setHint("");
-        mAddImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent i = new Intent(AtyPost.this, AtyPostReply.class);
-                i.putExtra(AtyPostReply.INTENT_ID, mPostID);
-                i.putExtra(AtyPostReply.INTENT_CONTENT, mEditText.getText().toString());
-                startActivityForResult(i, REPLY_CODE);
-            }
-        });
-        mCommentText.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mEditText.getText().length() == 0) {
-                    return;
-                }
-                mProgressDialog = ProgressDialog.show(AtyPost.this, null, getResources().getString(R.string.commenting));
-                Services.postService()
-                        .commentToPost(new PostService.CommentToPost(StrUtils.token(), mEditText.getText().toString(), mPostID))
-                        .subscribe(resp -> {
-                            Log.d(TAG, "commentToPost: " + resp.toString());
-                            mProgressDialog.dismiss();
-                            LogUtils.i(TAG, resp.toString());
-                            clearChatView();
-                            refreshAll();
-                        }, ex -> {
-                            mProgressDialog.dismiss();
-                        });
-            }
-        });
     }
 
     /**

@@ -50,7 +50,6 @@ public class AtyPostReply extends AtyImage {
 
     @BindView(R.id.main_editor)
     EditText mEditor;
-    ProgressDialog mProgressDialog;
 
     @BindView(R.id.add_image)
     SimpleDraweeView mDrawAddImage;
@@ -61,6 +60,8 @@ public class AtyPostReply extends AtyImage {
     private String mPostID;
 
     private AtomicInteger mSendImageResponseNum;
+
+    private ProgressDialog mProgressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +77,14 @@ public class AtyPostReply extends AtyImage {
 
         mChosenPicturePathList = new ArrayList<>();
         mSendImageResponseNum = new AtomicInteger();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mProgressDialog != null && mProgressDialog.isShowing()) {
+            mProgressDialog.dismiss();
+        }
     }
 
     @Override
@@ -104,20 +113,26 @@ public class AtyPostReply extends AtyImage {
     }
 
 
+    /**
+     * 发送评论
+     */
     @OnClick(R.id.send)
     public void onSendClick() {
+        Log.d(TAG, "onSendClick");
         if (mEditor.getText().length() == 0) {
             return;
         }
         mProgressDialog = ProgressDialog.show(AtyPostReply.this, null, getResources().getString(R.string.commenting));
         Services.postService()
-                .commentToPost(new PostService.CommentToPost(StrUtils.token(), mPostID, mEditor.getText().toString()))
+                .commentToPost(new PostService.CommentToPost(StrUtils.token(),
+                        mEditor.getText().toString(),
+                        mPostID))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(resp -> {
-                    Log.d(TAG, resp.toString());
+                    Log.d(TAG, "commentToPost: " + resp.toString());
+                    mProgressDialog.dismiss();
                     if (!resp.containsKey("id")) {
-                        mProgressDialog.dismiss();
                         Toast.makeText(AtyPostReply.this, R.string.comment_failed, Toast.LENGTH_SHORT).show();
                         return;
                     }
@@ -133,7 +148,7 @@ public class AtyPostReply extends AtyImage {
                     p.put("commentid", commendId);
                     mSendImageResponseNum.set(0);
                     for (int number = 0; number < mChosenPicturePathList.size(); number++) {
-                        p.put("number", String.format("%d", number));
+                        p.put("number", String.valueOf(number));
                         String path = mChosenPicturePathList.get(number);
 
                         OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, p, path, MEDIA_TYPE_JPG, TAG, new OkHttpUtils.SimpleOkCallBack() {
@@ -149,6 +164,7 @@ public class AtyPostReply extends AtyImage {
                         });
                     }
                 }, ex -> {
+                    Log.e(TAG, "commentToPost: " + ex.getMessage());
                     mProgressDialog.dismiss();
                     Toast.makeText(AtyPostReply.this, R.string.comment_failed, Toast.LENGTH_SHORT).show();
                 });
