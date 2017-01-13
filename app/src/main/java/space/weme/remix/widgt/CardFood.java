@@ -8,7 +8,6 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.Animatable;
 import android.net.Uri;
 import android.support.annotation.Nullable;
-import android.support.v4.util.ArrayMap;
 import android.support.v7.widget.CardView;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
@@ -30,20 +29,16 @@ import com.facebook.drawee.view.SimpleDraweeView;
 import com.facebook.imagepipeline.image.CloseableStaticBitmap;
 import com.facebook.imagepipeline.image.ImageInfo;
 
-import org.json.JSONObject;
-
-import rx.Scheduler;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 import space.weme.remix.R;
 import space.weme.remix.model.Food;
 import space.weme.remix.service.FoodService;
 import space.weme.remix.service.Services;
-import space.weme.remix.ui.find.AtyFoodMap;
 import space.weme.remix.ui.find.AtyDiscoveryFood;
+import space.weme.remix.ui.find.AtyFoodMap;
 import space.weme.remix.ui.user.AtyInfo;
 import space.weme.remix.util.DimensionUtils;
-import space.weme.remix.util.OkHttpUtils;
 import space.weme.remix.util.StrUtils;
 
 /**
@@ -204,11 +199,9 @@ public class CardFood extends CardView {
         currentFood = food;
 
         mFrontAvatar.setImageURI(Uri.parse(StrUtils.thumForID(food.getAuthorId())));
-        showPicture(food);
-        mFrontLikeNumber.setText(String.format("%d", food.getLikeNumber()));
-
-
+        mFrontLikeNumber.setText(String.valueOf(food.getLikeNumber()));
         mFrontLikeImage.setImageResource(food.getLikeFlag() == 1 ? R.mipmap.like_on : R.mipmap.like_off);
+        showPicture(food);
         String name = food.getAuthor() + aty.getResources().getString(R.string.recommend);
         mFrontUserName.setText(name);
         mFrontName.setText(food.getTitle());
@@ -284,11 +277,12 @@ public class CardFood extends CardView {
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(resp -> {
-                        if (resp.getResult() == null || food != currentFood) {
-                            return;
+                        if ("successful".equals(resp.getState())) {
+                            food.setLikeNumber(resp.getLikeNumber());
+                            food.setLikeFlag(1);
+                            mFrontLikeNumber.setText(String.valueOf(resp.getLikeNumber()));
+                            mFrontLikeImage.setImageResource(R.mipmap.like_on);
                         }
-                        mFrontLikeNumber.setText(String.format("%d", food.getLikeNumber() + 1));
-                        mFrontLikeImage.setImageResource(R.mipmap.like_on);
                     });
         }
     }

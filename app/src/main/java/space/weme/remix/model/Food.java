@@ -35,7 +35,7 @@ public class Food {
     @SerializedName("comment")
     private String comment;
 
-    @SerializedName("likeNumber")
+    @SerializedName("likenumber")
     private int likeNumber;
 
     @SerializedName("imageurl")

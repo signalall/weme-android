@@ -28,8 +28,14 @@ interface FoodService {
             @SerializedName("foodcardid") val foodCardId: String
     )
 
-    @POST(Constants.GET_RECOMMEND_FOOD)
+    data class LikeFoodResp(
+            @SerializedName("state") val state: String,
+            @SerializedName("reason") val reason: String,
+            @SerializedName("likenumber") val likeNumber: Int
+    )
+
+    @POST(Constants.LIKE_FOOD_URL)
     fun likeFood(
             @Body token: LikeFood
-    ): Observable<ResponseWrapper<Any>>
+    ): Observable<LikeFoodResp>
 }
