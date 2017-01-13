@@ -24,7 +24,8 @@ interface PostService {
     data class GetPostList(
             @SerializedName("token") val token: String,
             @SerializedName("topicid") val topicId: String,
-            @SerializedName("page") val page: String
+            @SerializedName("page") val page: String,
+            @SerializedName("pageSize") val pageSize: String // Todo:
     )
 
     @POST(Constants.GET_POST_LIST)
@@ -78,7 +79,8 @@ interface PostService {
     data class GetPostComment(
             @SerializedName("token") val token: String,
             @SerializedName("postid") val postId: String,
-            @SerializedName("page") val page: String
+            @SerializedName("page") val page: String,
+            @SerializedName("pageSize") val pageSize: String
     )
 
     @POST(Constants.GET_POST_COMMENT)

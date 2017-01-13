@@ -49,15 +49,15 @@ public class AtyPost extends SwipeActivity {
     private String mPostID;
 
     private boolean isLoading = false;
-    private int curPage = 1;
-    private boolean canLoadMore = true;
+    private int pageNumber = 1;
+    private boolean morePages = true;
 
     private List<PostComment> mPostCommentList;
     private Post mPost;
 
-    private PostAdapter mAdapter;
+    private PostAdapter mPostCommentListAdapter;
 
-    ProgressDialog mProgressDialog;
+    private ProgressDialog mProgressDialog;
 
     @BindView(R.id.chat_view_holder)
     LinearLayout mChatView;
@@ -74,6 +74,12 @@ public class AtyPost extends SwipeActivity {
     @BindView(R.id.post_detail_delete)
     TextView tvDelete;
 
+    @BindView(R.id.post_detail_toolbar)
+    TextView toolbar;
+
+    @BindView(R.id.post_detail_recycler_view)
+    RecyclerView mRecyclerView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -82,13 +88,11 @@ public class AtyPost extends SwipeActivity {
 
         mPostID = getIntent().getStringExtra(POST_INTENT);
         String theme = getIntent().getStringExtra(THEME_INTENT);
-        TextView toolbar = (TextView) findViewById(R.id.post_detail_toolbar);
         toolbar.setText(theme);
         SwipeBackLayout mSwipeBackLayout = getSwipeBackLayout();
         mSwipeBackLayout.setEdgeSize(DimensionUtils.getDisplay().widthPixels / 2);
         mSwipeBackLayout.setEdgeTrackingEnabled(SwipeBackLayout.EDGE_LEFT);
 
-        RecyclerView mRecyclerView = (RecyclerView) findViewById(R.id.post_detail_recycler_view);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(AtyPost.this));
         mRecyclerView.setHasFixedSize(true);
         mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -99,10 +103,11 @@ public class AtyPost extends SwipeActivity {
                 int visibleItemCount = recyclerView.getChildCount();
                 int totalItemCount = layoutManager.getItemCount();
                 int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
-                if (!isLoading && (totalItemCount - visibleItemCount)
-                        <= (firstVisibleItem + 2) && canLoadMore) {
-                    LogUtils.i(TAG, "scroll to end  load page " + (curPage + 1));
-                    loadPage(curPage + 1);
+                if (!isLoading &&
+                        (totalItemCount - visibleItemCount) <= (firstVisibleItem + 2) &&
+                        morePages) {
+                    Log.i(TAG, "scroll to end  load page " + (pageNumber + 1));
+                    loadPage();
                 }
             }
         });
@@ -116,40 +121,13 @@ public class AtyPost extends SwipeActivity {
                 return false;
             }
         });
-        mAdapter = new PostAdapter(this);
+        mPostCommentListAdapter = new PostAdapter(this);
+        mRecyclerView.setAdapter(mPostCommentListAdapter);
         mPostCommentList = new ArrayList<>();
-        mAdapter.setReplyList(mPostCommentList);
-        mRecyclerView.setAdapter(mAdapter);
-        refreshAll();
+        mPostCommentListAdapter.setReplyList(mPostCommentList);
+        loadAll();
     }
 
-    private void refreshAll() {
-        mPostCommentList.clear();
-        Services.postService()
-                .getPostDetail(new PostService.GetPostDetail(StrUtils.token(), mPostID))
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(resp -> {
-                    Log.d(TAG, "getPostDetail: " + resp.toString());
-                    if (resp.getResult() == null) {
-                        return;
-                    }
-                    mPost = resp.getResult();
-                    if (TextUtils.equals(mPost.getUserId(), StrUtils.id())) {
-                        tvDelete.setVisibility(View.VISIBLE);
-                        tvDelete.setOnClickListener(deleteListener);
-                    } else {
-                        tvDelete.setVisibility(View.GONE);
-                    }
-                    mAdapter.setPost(mPost);
-                    mAdapter.notifyDataSetChanged();
-                }, ex -> {
-                    Log.d(TAG, "getPostDetail: " + ex.getMessage());
-                });
-        loadPage(1);
-        mChatView.setVisibility(View.INVISIBLE);
-        canLoadMore = true;
-    }
 
     private View.OnClickListener deleteListener = new View.OnClickListener() {
         @Override
@@ -170,54 +148,18 @@ public class AtyPost extends SwipeActivity {
         }
     };
 
-    private void loadPage(final int page) {
-        beforeLoadPage(page);
-        curPage = page;
-        Services.postService()
-                .getPostComment(new PostService.GetPostComment(StrUtils.token(), mPostID, page + ""))
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(resp -> {
-                    Log.d(TAG, "getPostComment: " + resp.toString());
-                    List<PostComment> comments = resp.getResult();
-                    if (comments == null || comments.isEmpty()) {
-                        canLoadMore = false;
-                        return;
-                    }
-                    int previousCount = mPostCommentList.size();
-                    mPostCommentList.addAll(comments);
-                    if (page == 1) {
-                        mAdapter.notifyDataSetChanged();
-                    } else {
-                        mAdapter.notifyItemRangeInserted(previousCount, comments.size());
-                    }
-                    afterLoadPage(page);
-                }, ex -> {
-                    Log.e(TAG, "getPostComment: " + ex.getMessage());
-                    afterLoadPage(page);
-                });
-    }
-
-    private void beforeLoadPage(int page) {
-        isLoading = true;
-        if (page != 1) {
-            mPostCommentList.add(null);
-            // mAdapter.notifyItemInserted(mPostCommentList.size() + 1);
-        }
-    }
-
-    private void afterLoadPage(int page) {
-        isLoading = false;
-        if (page != 1) {
-            mPostCommentList.remove(mPostCommentList.size() - 1);
-            mAdapter.notifyItemRemoved(mPostCommentList.size() + 1);
-        }
-    }
-
 
     @Override
     protected String tag() {
         return TAG;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REPLY_CODE && resultCode == Activity.RESULT_OK) {
+            loadAll();
+        }
     }
 
     /**
@@ -249,9 +191,8 @@ public class AtyPost extends SwipeActivity {
                 .subscribe(resp -> {
                     Log.d(TAG, "commentToPost: " + resp.toString());
                     mProgressDialog.dismiss();
-                    LogUtils.i(TAG, resp.toString());
                     clearChatView();
-                    refreshAll();
+                    loadAll();
                 }, ex -> {
                     Log.e(TAG, "commentToPost: " + ex.getMessage());
                     mProgressDialog.dismiss();
@@ -294,7 +235,7 @@ public class AtyPost extends SwipeActivity {
                             Log.d(TAG, "commentToComment: " + resp.toString());
                             mProgressDialog.dismiss();
                             clearChatView();
-                            refreshAll();
+                            loadAll();
                         }, ex -> {
                             mProgressDialog.dismiss();
                         });
@@ -308,11 +249,115 @@ public class AtyPost extends SwipeActivity {
         mCommentText.setOnClickListener(null);
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REPLY_CODE && resultCode == Activity.RESULT_OK) {
-            refreshAll();
+    private void beforeReplacePage() {
+        isLoading = true;
+    }
+
+    private void afterReplacePage() {
+        isLoading = false;
+    }
+
+    private void beforeLoadPage() {
+        if (!isLoading) {
+            isLoading = true;
+            mPostCommentList.add(null);
+            mPostCommentListAdapter.notifyItemInserted(mPostCommentList.size() - 1);
         }
     }
+
+    private void afterLoadPage() {
+        if (isLoading && mPostCommentList.get(mPostCommentList.size() - 1) == null) {
+            isLoading = false;
+            mPostCommentList.remove(mPostCommentList.size() - 1);
+            mPostCommentListAdapter.notifyItemRemoved(mPostCommentList.size());
+        }
+    }
+
+    private void loadAll() {
+        Services.postService()
+                .getPostDetail(new PostService.GetPostDetail(StrUtils.token(), mPostID))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "getPostDetail: " + resp.toString());
+                    if (resp.getResult() == null) {
+                        return;
+                    }
+                    mPost = resp.getResult();
+                    mPostCommentListAdapter.setPost(mPost);
+                    mPostCommentListAdapter.notifyDataSetChanged();
+                    if (TextUtils.equals(mPost.getUserId(), StrUtils.id())) {
+                        tvDelete.setVisibility(View.VISIBLE);
+                        tvDelete.setOnClickListener(deleteListener);
+                    } else {
+                        tvDelete.setVisibility(View.GONE);
+                    }
+                }, ex -> {
+                    Log.d(TAG, "getPostDetail: " + ex.getMessage());
+                });
+        replacePage();
+        mChatView.setVisibility(View.INVISIBLE);
+        morePages = true;
+    }
+
+    private void replacePage() {
+        int pageSize = 10;
+        beforeReplacePage();
+        Services.postService()
+                .getPostComment(new PostService.GetPostComment(StrUtils.token(),
+                        mPostID,
+                        String.valueOf(1),
+                        String.valueOf(pageSize)))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "getPostComment: " + resp.toString());
+                    afterReplacePage();
+                    pageNumber = 1;
+                    morePages = true;
+                    List<PostComment> comments = resp.getResult();
+                    if (comments == null || comments.isEmpty()) {
+                        morePages = false;
+                        return;
+                    }
+                    mPostCommentList.clear();
+                    mPostCommentList.addAll(comments);
+                    mPostCommentListAdapter.setReplyList(mPostCommentList);
+                    mPostCommentListAdapter.notifyDataSetChanged();
+                }, ex -> {
+                    Log.e(TAG, "getPostComment: " + ex.getMessage());
+                    afterReplacePage();
+                    pageNumber = pageNumber;
+                });
+    }
+
+    private void loadPage() {
+        int pageSize = 10;
+        beforeLoadPage();
+        Services.postService()
+                .getPostComment(new PostService.GetPostComment(StrUtils.token(),
+                        mPostID,
+                        String.valueOf(pageNumber + 1),
+                        String.valueOf(pageSize)))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "getPostComment: " + resp.toString());
+                    afterLoadPage();
+                    pageNumber += 1;
+                    List<PostComment> comments = resp.getResult();
+                    if (comments == null || comments.isEmpty()) {
+                        morePages = false;
+                        return;
+                    }
+                    int positionStart = mPostCommentList.size();
+                    mPostCommentList.addAll(comments);
+                    mPostCommentListAdapter.notifyItemRangeInserted(positionStart, comments.size());
+                }, ex -> {
+                    Log.e(TAG, "getPostComment: " + ex.getMessage());
+                    afterLoadPage();
+                    pageNumber = pageNumber;
+                });
+    }
+
 }

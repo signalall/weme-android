@@ -7,7 +7,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.util.ArrayMap;
 import android.util.Log;
-import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -21,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import me.nereo.multi_image_selector.MultiImageSelectorActivity;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -61,6 +61,7 @@ public class AtyPostNew extends AtyImage {
 
     ProgressDialog mProgressDialog;
 
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_post_new);
@@ -70,7 +71,6 @@ public class AtyPostNew extends AtyImage {
         mDrawAddImage.setImageURI(Uri.parse("res:/" + R.mipmap.add_image));
         mDrawAddImage.setOnClickListener(mListener);
 
-        mSend.setOnClickListener(postListener);
         mChosenPicturePathList = new ArrayList<>();
         mSendImageResponseNum = new AtomicInteger();
     }
@@ -100,62 +100,69 @@ public class AtyPostNew extends AtyImage {
         return TAG;
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mProgressDialog != null && mProgressDialog.isShowing()) {
+            mProgressDialog.dismiss();
+        }
+    }
 
     /**
      * 发布Post
      */
-    private View.OnClickListener postListener = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            String title = mTitle.getText().toString();
-            String content = mContent.getText().toString();
-            if (title.length() == 0) {
-                return;
-            }
-            mProgressDialog = ProgressDialog.show(AtyPostNew.this, null, getResources().getString(R.string.posting));
-            Services.postService()
-                    .publishPost(new PostService.PublishPost(StrUtils.token(), mTopicID, title, content))
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(resp -> {
-                        Log.d(TAG, "publishPost: " + resp.toString());
-                        if (!resp.containsKey("id")) {
-                            mProgressDialog.dismiss();
-                            Toast.makeText(AtyPostNew.this, R.string.post_failed, Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        String postId = resp.get("id");
-                        if (mChosenPicturePathList.size() == 0) {
-                            setResult(RESULT_OK);
-                            finish();
-                            return;
-                        }
-                        ArrayMap<String, String> p = new ArrayMap<>();
-                        p.put("token", StrUtils.token());
-                        p.put("type", "-4");
-                        p.put("postid", postId);
-                        mSendImageResponseNum.set(0);
-                        for (int number = 0; number < mChosenPicturePathList.size(); number++) {
-                            p.put("number", String.format("%d", number));
-                            String path = mChosenPicturePathList.get(number);
-                            OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, p, path, StrUtils.MEDIA_TYPE_IMG, TAG, new OkHttpUtils.SimpleOkCallBack() {
-                                @Override
-                                public void onFailure(IOException e) {
-                                    uploadImageReturned();
-                                }
-
-                                @Override
-                                public void onResponse(String s) {
-                                    uploadImageReturned();
-                                }
-                            });
-                        }
-                    }, ex -> {
-                        mProgressDialog.dismiss();
-                        Toast.makeText(AtyPostNew.this, R.string.post_failed, Toast.LENGTH_SHORT).show();
-                    });
+    @OnClick(R.id.aty_post_new_send)
+    public void onSendClick() {
+        String title = mTitle.getText().toString();
+        String content = mContent.getText().toString();
+        if (title.length() == 0) {
+            return;
         }
-    };
+        mProgressDialog = ProgressDialog.show(AtyPostNew.this, null, getResources().getString(R.string.posting));
+        Services.postService()
+                .publishPost(new PostService.PublishPost(StrUtils.token(), mTopicID, title, content))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "publishPost: " + resp.toString());
+                    mProgressDialog.dismiss();
+                    if (!resp.containsKey("id")) {
+                        Toast.makeText(AtyPostNew.this, R.string.post_failed, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    String postId = resp.get("id");
+                    if (mChosenPicturePathList.size() == 0) {
+                        setResult(RESULT_OK);
+                        finish();
+                        return;
+                    }
+                    ArrayMap<String, String> p = new ArrayMap<>();
+                    p.put("token", StrUtils.token());
+                    p.put("type", "-4");
+                    p.put("postid", postId);
+                    mSendImageResponseNum.set(0);
+                    for (int number = 0; number < mChosenPicturePathList.size(); number++) {
+                        p.put("number", String.format("%d", number));
+                        String path = mChosenPicturePathList.get(number);
+                        OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, p, path, StrUtils.MEDIA_TYPE_IMG, TAG, new OkHttpUtils.SimpleOkCallBack() {
+                            @Override
+                            public void onFailure(IOException e) {
+                                uploadImageReturned();
+                            }
+
+                            @Override
+                            public void onResponse(String s) {
+                                uploadImageReturned();
+                            }
+                        });
+                    }
+                }, ex -> {
+                    Log.e(TAG, "publishPost: " + ex.getMessage());
+                    mProgressDialog.dismiss();
+                    Toast.makeText(AtyPostNew.this, R.string.post_failed, Toast.LENGTH_SHORT).show();
+                });
+    }
+
 
     private void uploadImageReturned() {
         int num = mSendImageResponseNum.incrementAndGet();

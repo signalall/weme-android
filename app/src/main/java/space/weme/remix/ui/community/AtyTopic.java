@@ -15,6 +15,7 @@ import com.facebook.drawee.view.SimpleDraweeView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -48,10 +49,10 @@ public class AtyTopic extends SwipeActivity {
     private ArrayList<Post> mPostList;
     private boolean isRefreshing = false;
     private boolean isLoading = false;
-    private int curPage = 0;
-    private boolean canLoadMore = true;
+    private int pageNumber = 0;
+    private boolean morePages = true;
 
-    private TopicAdapter mAdapter;
+    private TopicAdapter mPostListAdapter;
 
     @BindView(R.id.swipe_refresh)
     SwipeRefreshLayout mSwipeRefreshLayout;
@@ -68,12 +69,6 @@ public class AtyTopic extends SwipeActivity {
     @BindView(R.id.aty_topic_recycler_view)
     RecyclerView mRecyclerView;
 
-    @OnClick(R.id.fab)
-    public void onFabClick() {
-        Intent i = new Intent(AtyTopic.this, AtyPostNew.class);
-        i.putExtra(AtyPostNew.INTENT_ID, mTopicId);
-        startActivityForResult(i, REQUEST_NEW_POST);
-    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -100,113 +95,36 @@ public class AtyTopic extends SwipeActivity {
                 int visibleItemCount = recyclerView.getChildCount();
                 int totalItemCount = layoutManager.getItemCount();
                 int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
-                if (!isLoading && (totalItemCount - visibleItemCount)
-                        <= (firstVisibleItem + 1) && canLoadMore) {
-                    // End has been reached
-                    Log.i(TAG, "scroll to end  load page " + (curPage + 1));
-                    loadPage(curPage + 1);
+                if (!isLoading &&
+                        (totalItemCount - visibleItemCount) <= (firstVisibleItem + 1) &&
+                        morePages) {
+                    Log.i(TAG, "scroll to end  load page " + (pageNumber + 1));
+
+                    rx.Observable.timer(0, TimeUnit.SECONDS)
+                            .subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe(resp -> {
+                                loadPage();
+                            });
                 }
             }
         });
-        mAdapter = new TopicAdapter(AtyTopic.this);
-        mRecyclerView.setAdapter(mAdapter);
+        mPostListAdapter = new TopicAdapter(this);
+        mRecyclerView.setAdapter(mPostListAdapter);
         mPostList = new ArrayList<>();
-        mAdapter.setPostList(mPostList);
+        mPostListAdapter.setPostList(mPostList);
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
                 if (isRefreshing) {
                     Log.d(TAG, "ignore manually update!");
                 } else {
-                    loadPage(1, true);
+                    replacePage();
                 }
             }
         });
         loadAll();
     }
-
-    private void loadAll() {
-        Services.topicService()
-                .getTopicInfo(new TopicService.GetTopicInfo(StrUtils.token(), mTopicId))
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(resp -> {
-                    Log.d(TAG, "getTopicInfo: " + resp.toString());
-                    PostTopic postTopic = resp.getResult();
-                    mPostTopic = postTopic;
-                    mImage.setImageURI(Uri.parse(mPostTopic.imageUrl));
-                    mTvSlogan.setText(mPostTopic.slogan);
-                    mTvTheme.setText(mPostTopic.theme);
-                    mAdapter.setTopic(mPostTopic);
-                }, ex -> {
-                    Log.e(TAG, ex.getMessage());
-                });
-        loadPage(1, true);
-    }
-
-    private void beforeLoadPage(boolean replace) {
-        if (replace) {
-            isRefreshing = true;
-            curPage = 1;
-        } else {
-            isLoading = true;
-            mPostList.add(null);
-            mAdapter.notifyItemInserted(mPostList.size());
-        }
-    }
-
-    private void afterLoadPage(boolean replace) {
-        if (replace) {
-            mSwipeRefreshLayout.setRefreshing(false);
-            isRefreshing = false;
-        } else {
-            isLoading = false;
-            mPostList.remove(mPostList.size() - 1);
-            mAdapter.notifyItemRemoved(mPostList.size());
-        }
-    }
-
-    private void loadPage(int page) {
-        loadPage(page, false);
-    }
-
-    private void loadPage(int page, final boolean replace) {
-        beforeLoadPage(replace);
-        Services.postService()
-                .getPostList(new PostService.GetPostList(StrUtils.token(), mTopicId, page + ""))
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(resp -> {
-                    Log.d(TAG, "getPostList: " + resp.toString());
-                    List<Post> posts = resp.getResult();
-                    afterLoadPage(replace);
-                    if (replace) {
-                        canLoadMore = true;
-                    } else {
-                        curPage++;
-                    }
-                    int previousCount = mPostList.size();
-                    int size = posts.size();
-                    if (replace) {
-                        mPostList.clear();
-                    }
-                    if (size == 0) {
-                        canLoadMore = false;
-                        return;
-                    }
-                    mPostList.addAll(posts);
-                    mAdapter.setPostList(mPostList);
-                    if (replace) {
-                        mAdapter.notifyDataSetChanged();
-                    } else {
-                        mAdapter.notifyItemRangeInserted(previousCount, size);
-                    }
-                }, ex -> {
-                    Log.e(TAG, "getPostList: " + ex.getMessage());
-                    afterLoadPage(replace);
-                });
-    }
-
 
     @Override
     protected String tag() {
@@ -219,5 +137,120 @@ public class AtyTopic extends SwipeActivity {
         if (requestCode == REQUEST_NEW_POST && resultCode == RESULT_OK) {
             loadAll();
         }
+    }
+
+    @OnClick(R.id.fab)
+    public void onFabClick() {
+        Intent i = new Intent(AtyTopic.this, AtyPostNew.class);
+        i.putExtra(AtyPostNew.INTENT_ID, mTopicId);
+        startActivityForResult(i, REQUEST_NEW_POST);
+    }
+
+    private void beforeReplacePage() {
+        isRefreshing = true;
+    }
+
+    private void afterReplacePage() {
+        isRefreshing = false;
+        mSwipeRefreshLayout.setRefreshing(false);
+    }
+
+    private void beforeLoadPage() {
+        if (!isLoading) {
+            isLoading = true;
+            mPostList.add(null);
+            mPostListAdapter.notifyItemInserted(mPostList.size());
+        }
+    }
+
+    private void afterLoadPage() {
+        if (isLoading && mPostList.get(mPostList.size() - 1) == null) {
+            isLoading = false;
+            mPostList.remove(mPostList.size() - 1);
+            mPostListAdapter.notifyItemRemoved(mPostList.size());
+        }
+    }
+
+    private void loadAll() {
+        Services.topicService()
+                .getTopicInfo(new TopicService.GetTopicInfo(StrUtils.token(), mTopicId))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "getTopicInfo: " + resp.toString());
+                    if (resp.getResult() == null) {
+                        return;
+                    }
+                    mPostTopic = resp.getResult();
+                    mImage.setImageURI(Uri.parse(mPostTopic.imageUrl));
+                    mTvSlogan.setText(mPostTopic.slogan);
+                    mTvTheme.setText(mPostTopic.theme);
+                    mPostListAdapter.setTopic(mPostTopic);
+                    mPostListAdapter.notifyDataSetChanged();
+                }, ex -> {
+                    Log.e(TAG, "getTopicInfo: " + ex.getMessage());
+                });
+        replacePage();
+    }
+
+    private void replacePage() {
+        int pageSize = 10;
+        beforeReplacePage();
+        Services.postService()
+                .getPostList(new PostService.GetPostList(
+                        StrUtils.token(),
+                        mTopicId,
+                        String.valueOf(1),
+                        String.valueOf(pageSize)))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "getPostList: " + resp.toString());
+                    afterReplacePage();
+                    pageNumber = 1;
+                    morePages = true;
+                    List<Post> posts = resp.getResult();
+                    if (posts == null || posts.size() == 0) {
+                        morePages = false;
+                        return;
+                    }
+                    mPostList.clear();
+                    mPostList.addAll(posts);
+                    mPostListAdapter.setPostList(mPostList);
+                    mPostListAdapter.notifyDataSetChanged();
+                }, ex -> {
+                    Log.e(TAG, "getPostList: " + ex.getMessage());
+                    afterReplacePage();
+                    pageNumber = pageNumber; //
+                });
+    }
+
+    private void loadPage() {
+        int pageSize = 10;
+        beforeLoadPage();
+        Services.postService()
+                .getPostList(new PostService.GetPostList(StrUtils.token(),
+                        mTopicId,
+                        String.valueOf(pageNumber + 1), // next page
+                        String.valueOf(pageSize)))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "getPostList: " + resp.toString());
+                    afterLoadPage();
+                    pageNumber += 1;
+                    List<Post> posts = resp.getResult();
+                    if (posts == null || posts.size() == 0) {
+                        morePages = false;
+                        return;
+                    }
+                    int previousCount = mPostList.size();
+                    mPostList.addAll(posts);
+                    mPostListAdapter.notifyItemRangeInserted(previousCount, posts.size());
+                }, ex -> {
+                    Log.e(TAG, "getPostList: " + ex.getMessage());
+                    afterLoadPage();
+                    pageNumber = pageNumber; //
+                });
     }
 }
