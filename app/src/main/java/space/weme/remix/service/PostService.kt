@@ -70,7 +70,7 @@ interface PostService {
             @SerializedName("body") val body: String
     )
 
-    @POST(Constants.COMMENT_TO_POST_URL)
+    @POST(Constants.PUBLISH_POST_URL)
     fun publishPost(
             @Body body: PublishPost
     ): Observable<Map<String, String>>
