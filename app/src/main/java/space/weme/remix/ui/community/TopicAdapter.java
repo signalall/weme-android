@@ -113,11 +113,11 @@ public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             item.time.setText(StrUtils.timeTransfer(post.getTimestamp()));
             item.title.setText(post.getTitle());
             item.content.setText(post.getContent());
-            item.like_number.setText(post.likeNumber);
-            item.comment_number.setText(post.commentNumber);
+            item.like_number.setText(post.getLikeNumber());
+            item.comment_number.setText(post.getCommentNumber());
             item.grid.removeAllViews();
-            for (int i = 0; i < post.thumbnailUrl.size() && i < 4; i++) {
-                String url = post.thumbnailUrl.get(i);
+            for (int i = 0; i < post.getThumbnailUrl().size() && i < 4; i++) {
+                String url = post.getThumbnailUrl().get(i);
                 SimpleDraweeView image = new SimpleDraweeView(mContext);
                 item.grid.addView(image);
                 image.setImageURI(Uri.parse(url));
@@ -125,7 +125,7 @@ public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
                 image.setOnClickListener(mListener);
                 try {
                     JSONObject j = new JSONObject();
-                    JSONArray array = new JSONArray(post.imageUrl);
+                    JSONArray array = new JSONArray(post.getImageUrl());
                     j.put(AtyImage.KEY_ARRAY, array);
                     j.put(AtyImage.KEY_INDEX, i);
                     image.setTag(j.toString());

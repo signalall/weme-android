@@ -38,20 +38,32 @@ interface PostService {
             @SerializedName("postid") val postId: String
     )
 
+    data class LikePostResp(
+            @SerializedName("reason") val reason: String,
+            @SerializedName("state") val state: String,
+            @SerializedName("likenumber") val likeNumber: Int
+    )
+
     @POST(Constants.LIKE_POST_URL)
     fun likePost(
             @Body body: LikePost
-    ): Observable<ResponseWrapper<Any>>
+    ): Observable<LikePostResp>
 
     data class UnlikePost(
             @SerializedName("token") val token: String,
             @SerializedName("postid") val postId: String
     )
 
+    data class UnlikePostResp(
+            @SerializedName("reason") val reason: String,
+            @SerializedName("state") val state: String,
+            @SerializedName("likenumber") val likeNumber: Int
+    )
+
     @POST(Constants.UNLIKE_POST_URL)
     fun unlikePost(
             @Body body: UnlikePost
-    ): Observable<ResponseWrapper<Any>>
+    ): Observable<UnlikePostResp>
 
     data class CommentToPost(
             @SerializedName("token") val token: String,
@@ -114,20 +126,32 @@ interface PostService {
             @SerializedName("commentid") val commentId: String
     )
 
+    data class LikeCommentResp(
+            @SerializedName("reason") val reason: String,
+            @SerializedName("state") val state: String,
+            @SerializedName("likenumber") val likeNumber: Int
+    )
+
     @POST(Constants.LIKE_COMMENT_URL)
     fun likeComment(
             @Body body: LikeComment
-    ): Observable<Any>
+    ): Observable<LikeCommentResp>
 
     data class UnlikeComment(
             @SerializedName("token") val token: String,
             @SerializedName("commentid") val commentId: String
     )
 
+    data class UnlikeCommentResp(
+            @SerializedName("reason") val reason: String,
+            @SerializedName("state") val state: String,
+            @SerializedName("likenumber") val likeNumber: Int
+    )
+
     @POST(Constants.UNLIKE_COMMENT_URL)
     fun unlikeComment(
             @Body body: UnlikeComment
-    ): Observable<Any>
+    ): Observable<UnlikeCommentResp>
 }
 
 

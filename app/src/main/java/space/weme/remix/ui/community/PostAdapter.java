@@ -113,15 +113,15 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             viewHolder.tvTitle.setText(mPost.getTitle());
             viewHolder.tvContent.setText(mPost.getContent());
             viewHolder.imagesGridLayout.removeAllViews();
-            if (mPost.thumbnailUrl.size() <= 1) {
+            if (mPost.getThumbnailUrl().size() <= 1) {
                 viewHolder.imagesGridLayout.setNumInRow(1);
-            } else if (mPost.thumbnailUrl.size() <= 4) {
+            } else if (mPost.getThumbnailUrl().size() <= 4) {
                 viewHolder.imagesGridLayout.setNumInRow(2);
             } else {
                 viewHolder.imagesGridLayout.setNumInRow(3);
             }
-            for (int i = 0; i < mPost.thumbnailUrl.size(); i++) {
-                String thumbUrl = mPost.imageUrl.get(i);
+            for (int i = 0; i < mPost.getThumbnailUrl().size(); i++) {
+                String thumbUrl = mPost.getImageUrl().get(i);
                 SimpleDraweeView image = new SimpleDraweeView(mContext);
                 viewHolder.imagesGridLayout.addView(image);
                 image.setImageURI(Uri.parse(thumbUrl));
@@ -129,7 +129,7 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 image.setOnClickListener(mListener);
                 try {
                     JSONObject j = new JSONObject();
-                    JSONArray array = new JSONArray(mPost.imageUrl);
+                    JSONArray array = new JSONArray(mPost.getImageUrl());
                     j.put(AtyImage.KEY_INDEX, i);
                     j.put(AtyImage.KEY_ARRAY, array);
                     image.setTag(j);
@@ -137,9 +137,9 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     // ignore
                 }
             }
-            viewHolder.tvLikeNumber.setText(mPost.likeNumber);
-            viewHolder.tvCommit.setText(mPost.commentNumber);
-            if (mPost.flag.equals("0")) {
+            viewHolder.tvLikeNumber.setText(mPost.getLikeNumber());
+            viewHolder.tvCommit.setText(mPost.getCommentNumber());
+            if (mPost.getFlag().equals("0")) {
                 viewHolder.ivLike.setImageResource(R.mipmap.like_off);
                 viewHolder.likeLayout.setOnClickListener(mListener);
             } else {
@@ -147,12 +147,12 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             }
             viewHolder.commitLayout.setOnClickListener(mListener);
             viewHolder.llLikePeoples.removeAllViews();
-            for (int id : mPost.likeUserIds) {
+            for (int id : mPost.getLikeUserIds()) {
                 SimpleDraweeView avatar = (SimpleDraweeView) LayoutInflater.from(mContext).
                         inflate(R.layout.aty_post_avatar, viewHolder.llLikePeoples, false);
                 viewHolder.llLikePeoples.addView(avatar);
                 avatar.setImageURI(Uri.parse(StrUtils.thumForID(Integer.toString(id))));
-                avatar.setTag(String.format("%d", id));
+                avatar.setTag(String.valueOf(id));
                 avatar.setId(avatarId);
                 avatar.setOnClickListener(mListener);
                 // todo show more
@@ -170,8 +170,8 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             item.tvUniversity.setText(postComment.getSchool());
             item.tvTime.setText(StrUtils.timeTransfer(postComment.getTimestamp()));
             item.tvContent.setText(postComment.getContent());
-            item.tvLike.setText(String.format("%d", postComment.getLikeCount()));
-            item.tvCommit.setText(String.format("%d", postComment.getCommentCount()));
+            item.tvLike.setText(String.valueOf(postComment.getLikeNumber()));
+            item.tvCommit.setText(String.valueOf(postComment.getCommentCount()));
             if (postComment.getFlag().equals("0")) {
                 item.ivLike.setImageResource(R.mipmap.like_off);
                 item.llLike.setTag(position);
@@ -355,6 +355,7 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
+
     private class PostListener implements View.OnClickListener {
 
         @Override
@@ -386,18 +387,19 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private void likePost() {
-        String userId = StrUtils.id();
-        if (!mPost.likeUserIds.contains(userId)) { // Like
+        if ("0".equals(mPost.getFlag())) { // Like
             Services.postService()
                     .likePost(new PostService.LikePost(StrUtils.token(), mPost.getPostId()))
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(resp -> {
                         Log.d(TAG, "likePost: " + resp.toString());
-                        mPost.likeNumber = (Integer.parseInt(mPost.likeNumber) + 1) + "";
-                        mPost.likeUserIds.add(Integer.parseInt(StrUtils.id()));
-                        mPost.flag = "1";
-                        notifyItemChanged(0);
+                        if ("successful".equals(resp.getState())) {
+                            mPost.setLikeNumber(String.valueOf(resp.getLikeNumber()));
+                            mPost.getLikeUserIds().add(Integer.parseInt(StrUtils.id()));
+                            mPost.setFlag("1");
+                            notifyItemChanged(0);
+                        }
                     }, ex -> {
                         Log.e(TAG, "likePost: " + ex.getMessage());
                     });
@@ -408,10 +410,12 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(resp -> {
                         Log.d(TAG, "unlikePost: " + resp.toString());
-                        mPost.likeNumber = (Integer.parseInt(mPost.likeNumber) - 1) + "";
-                        mPost.likeUserIds.remove(Integer.parseInt(StrUtils.id()));
-                        mPost.flag = "0";
-                        notifyItemChanged(0);
+                        if ("successful".equals(resp.getState())) {
+                            mPost.setLikeNumber(String.valueOf(resp.getLikeNumber()));
+                            mPost.getLikeUserIds().remove(Integer.parseInt(StrUtils.id()));
+                            mPost.setFlag("0");
+                            notifyItemChanged(0);
+                        }
                     }, ex -> {
                         Log.e(TAG, "unlikePost: " + ex.getMessage());
                     });
@@ -419,20 +423,39 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private void likeComment(final View v) {
-        String userId = StrUtils.id();
-        final int position = (int) v.getTag();
-        final PostComment postComment = mPostCommentList.get(position - 1);
-        Services.postService()
-                .likeComment(new PostService.LikeComment(StrUtils.token(), postComment.getId()))
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(resp -> {
-                    Log.d(TAG, "likeComment: " + resp.toString());
-                    postComment.setFlag("1");
-                    postComment.setLikeCount(postComment.getLikeCount() + 1);
-                    notifyItemChanged(position);
-                }, ex -> {
-                    Log.e(TAG, "likeComment: " + ex.getMessage());
-                });
+        int position = (int) v.getTag();
+        PostComment postComment = mPostCommentList.get(position - 1);
+
+        if ("0".equals(postComment.getFlag())) {
+            Services.postService()
+                    .likeComment(new PostService.LikeComment(StrUtils.token(), postComment.getId()))
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(resp -> {
+                        Log.d(TAG, "likeComment: " + resp.toString());
+                        if ("successful".equals(resp.getState())) {
+                            postComment.setFlag("1");
+                            postComment.setLikeNumber(resp.getLikeNumber());
+                            notifyItemChanged(position);
+                        }
+                    }, ex -> {
+                        Log.e(TAG, "likeComment: " + ex.getMessage());
+                    });
+        } else {
+            Services.postService()
+                    .unlikeComment(new PostService.UnlikeComment(StrUtils.token(), postComment.getId()))
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(resp -> {
+                        Log.d(TAG, "unlikeComment: " + resp.toString());
+                        if ("successful".equals(resp.getState())) {
+                            postComment.setFlag("0");
+                            postComment.setLikeNumber(resp.getLikeNumber());
+                            notifyItemChanged(position);
+                        }
+                    }, ex -> {
+                        Log.e(TAG, "unlikeComment: " + ex.getMessage());
+                    });
+        }
     }
 }

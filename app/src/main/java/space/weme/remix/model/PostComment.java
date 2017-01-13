@@ -13,8 +13,11 @@ public class PostComment {
     @SerializedName("body")
     private String content;
 
+    /**
+     * "1" means I like it
+     */
     @SerializedName("flag")
-    private String flag; // whether you liked this reply
+    private String flag;
 
     @SerializedName("gender")
     private String gender;
@@ -25,11 +28,11 @@ public class PostComment {
     @SerializedName("image")
     private List<String> image;
 
-    @SerializedName("commentNumber")
+    @SerializedName("commentnumber")
     private int commentCount;
 
-    @SerializedName("likeNumber")
-    private int likeCount;
+    @SerializedName("likenumber")
+    private int likeNumber;
 
     @SerializedName("name")
     private String name;
@@ -48,6 +51,9 @@ public class PostComment {
 
     @SerializedName("userid")
     private String userId;
+
+    @SerializedName("certification")
+    private String certification;
 
     public String getContent() {
         return content;
@@ -97,12 +103,12 @@ public class PostComment {
         this.image = image;
     }
 
-    public int getLikeCount() {
-        return likeCount;
+    public int getLikeNumber() {
+        return likeNumber;
     }
 
-    public void setLikeCount(int likeCount) {
-        this.likeCount = likeCount;
+    public void setLikeNumber(int likeNumber) {
+        this.likeNumber = likeNumber;
     }
 
     public String getName() {
@@ -153,17 +159,25 @@ public class PostComment {
         this.userId = userId;
     }
 
+    public String getCertification() {
+        return certification;
+    }
+
+    public void setCertification(String certification) {
+        this.certification = certification;
+    }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("PostComment{");
         sb.append("content='").append(content).append('\'');
+        sb.append(", certification='").append(certification).append('\'');
         sb.append(", flag='").append(flag).append('\'');
         sb.append(", gender='").append(gender).append('\'');
         sb.append(", id='").append(id).append('\'');
         sb.append(", image=").append(image);
         sb.append(", commentCount=").append(commentCount);
-        sb.append(", likeCount=").append(likeCount);
+        sb.append(", likeNumber=").append(likeNumber);
         sb.append(", name='").append(name).append('\'');
         sb.append(", comments=").append(comments);
         sb.append(", school='").append(school).append('\'');

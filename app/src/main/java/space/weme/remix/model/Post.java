@@ -38,28 +38,31 @@ public class Post {
      * 喜爱数
      */
     @SerializedName("likenumber")
-    public String likeNumber;
+    private String likeNumber;
 
     /**
      * 评论数
      */
     @SerializedName("commentnumber")
-    public String commentNumber;
+    private String commentNumber;
 
     @SerializedName("imageurl")
-    public List<String> imageUrl;
+    private List<String> imageUrl;
 
     @SerializedName("thumbnail")
-    public List<String> thumbnailUrl;
+    private List<String> thumbnailUrl;
 
     /**
      * 喜爱的用户
      */
     @SerializedName("likeusers")
-    public List<Integer> likeUserIds;
+    private List<Integer> likeUserIds;
 
     @SerializedName("flag")
-    public String flag; // whether current user has liked this post
+    private String flag; // whether current user has liked this post
+
+    @SerializedName("certification")
+    private String certification;
 
     public String getPostId() {
         return postId;
@@ -173,6 +176,15 @@ public class Post {
         this.flag = flag;
     }
 
+    public String getCertification() {
+        return certification;
+    }
+
+    public void setCertification(String certification) {
+        this.certification = certification;
+    }
+
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Post{");
@@ -190,6 +202,7 @@ public class Post {
         sb.append(", thumbnailUrl=").append(thumbnailUrl);
         sb.append(", likeUserIds=").append(likeUserIds);
         sb.append(", flag='").append(flag).append('\'');
+        sb.append(", certification='").append(certification).append('\'');
         sb.append('}');
         return sb.toString();
     }
