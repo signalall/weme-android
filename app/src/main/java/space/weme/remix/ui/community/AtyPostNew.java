@@ -142,7 +142,7 @@ public class AtyPostNew extends AtyImage {
                     p.put("postid", postId);
                     mSendImageResponseNum.set(0);
                     for (int number = 0; number < mChosenPicturePathList.size(); number++) {
-                        p.put("number", String.format("%d", number));
+                        p.put("number", String.valueOf(number));
                         String path = mChosenPicturePathList.get(number);
                         OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, p, path, StrUtils.MEDIA_TYPE_IMG, TAG, new OkHttpUtils.SimpleOkCallBack() {
                             @Override

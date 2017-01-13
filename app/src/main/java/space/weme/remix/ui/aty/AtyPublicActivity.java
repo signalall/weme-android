@@ -4,7 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.View;
+import android.util.Log;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -15,10 +15,14 @@ import com.facebook.imagepipeline.common.ResizeOptions;
 import com.facebook.imagepipeline.request.ImageRequestBuilder;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import me.nereo.multi_image_selector.MultiImageSelectorActivity;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -26,7 +30,7 @@ import space.weme.remix.R;
 import space.weme.remix.service.ActivityService;
 import space.weme.remix.service.Services;
 import space.weme.remix.ui.base.SwipeActivity;
-import space.weme.remix.util.LogUtils;
+import space.weme.remix.util.OkHttpUtils;
 import space.weme.remix.util.StrUtils;
 import space.weme.remix.widgt.WDialog;
 import space.weme.remix.widgt.WSwitch;
@@ -72,42 +76,8 @@ public class AtyPublicActivity extends SwipeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_public_activity);
-
         ButterKnife.bind(this);
         wSwitch.setOn(false);
-
-        actAdd.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(AtyPublicActivity.this, MultiImageSelectorActivity.class);
-                // 是否显示拍摄图片
-                intent.putExtra(MultiImageSelectorActivity.EXTRA_SHOW_CAMERA, true);
-                // 最大可选择图片数量(多图情况下)
-                //intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_COUNT, Config.MAX_PICTURE);
-                // 选择模式
-                intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_MODE, MultiImageSelectorActivity.MODE_SINGLE);
-
-                startActivityForResult(intent, REQUEST_IMAGE);
-            }
-        });
-
-        txtPublic.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (path != null && !path.isEmpty()) {
-                    new WDialog.Builder(AtyPublicActivity.this).setMessage("确定发布活动吗？")
-                            .setPositive("发布", new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    publicActivity();
-                                }
-                            }).show();
-                } else {
-                    new WDialog.Builder(AtyPublicActivity.this).setMessage("请填写必填信息").show();
-                }
-
-            }
-        });
     }
 
 
@@ -120,7 +90,7 @@ public class AtyPublicActivity extends SwipeActivity {
 
             // Uri uri = "file:///mnt/sdcard/MyApp/myfile.jpg";
             //解决图片大于4M不显示问题(由于openGL最大支持4M，有局限只能缩小图片了)
-            LogUtils.e(TAG, actAdd.getLayoutParams().width + " " + actAdd.getLayoutParams().height);
+            Log.e(TAG, actAdd.getLayoutParams().width + " " + actAdd.getLayoutParams().height);
             ImageRequestBuilder imageRequestBuilder = ImageRequestBuilder.newBuilderWithSource(uri)
                     .setAutoRotateEnabled(true)
                     .setResizeOptions(new ResizeOptions(actAdd.getLayoutParams().width, actAdd.getLayoutParams().height));
@@ -131,13 +101,40 @@ public class AtyPublicActivity extends SwipeActivity {
                     .build();
 
             actAdd.setController(controller);
-            LogUtils.d(TAG, "uri " + uri.toString());
+            Log.d(TAG, "uri " + uri.toString());
             //     actAdd.setImageURI(uri);
         }
     }
 
+    @Override
+    protected String tag() {
+        return TAG;
+    }
 
-    void publicActivity() {
+    @OnClick(R.id.img_act_add)
+    public void onAddImageClick() {
+        Intent intent = new Intent(AtyPublicActivity.this, MultiImageSelectorActivity.class);
+        // 是否显示拍摄图片
+        intent.putExtra(MultiImageSelectorActivity.EXTRA_SHOW_CAMERA, true);
+        // 最大可选择图片数量(多图情况下)
+        //intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_COUNT, Config.MAX_PICTURE);
+        // 选择模式
+        intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_MODE, MultiImageSelectorActivity.MODE_SINGLE);
+
+        startActivityForResult(intent, REQUEST_IMAGE);
+    }
+
+    @OnClick(R.id.txt_activity_public)
+    public void onPublishClick() {
+        if (path != null && !path.isEmpty()) {
+            new WDialog.Builder(AtyPublicActivity.this).setMessage("确定发布活动吗？")
+                    .setPositive("发布", v -> publishActivity()).show();
+        } else {
+            new WDialog.Builder(AtyPublicActivity.this).setMessage("请填写必填信息").show();
+        }
+    }
+
+    void publishActivity() {
         ActivityService.PublishActivity pa = new ActivityService.PublishActivity(
                 StrUtils.token(),
                 editTitle.getText().toString(),
@@ -154,28 +151,47 @@ public class AtyPublicActivity extends SwipeActivity {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(resp -> {
-                    if (resp == null) {
+                    Log.d(TAG, "publishActivity: " + resp.toString());
+                    if ("successful".equals(resp.getState())) {
                         new WDialog.Builder(AtyPublicActivity.this)
                                 .setTitle("提示")
-                                .setMessage("活动发布失败")
-                                .setPositive("确认", new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        onBackPressed();
-                                    }
-                                }).show();
+                                .setMessage("活动发布成功，请等待审核")
+                                .show();
+
+                        // 上传图片
+                        Map<String, String> params = new HashMap<>();
+                        params.put("token", StrUtils.token());
+                        params.put("type", "-10");
+                        params.put("activityid", String.valueOf(resp.getId()));
+                        for (int i = 0; i < path.size(); i++) {
+                            String p = path.get(i);
+                            params.put("number", String.valueOf(i));
+                            OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL,
+                                    params,
+                                    path.get(i),
+                                    StrUtils.MEDIA_TYPE_IMG,
+                                    TAG,
+                                    new OkHttpUtils.OkCallBack() {
+                                        @Override
+                                        public void onFailure(IOException e) {
+                                        }
+
+                                        @Override
+                                        public void onResponse(String res) {
+                                        }
+                                    });
+                        }
+
                     } else {
                         new WDialog.Builder(AtyPublicActivity.this)
                                 .setTitle("提示")
-                                .setMessage("已发布活动").show();
+                                .setMessage("活动发布失败")
+                                .setPositive("确认", v -> onBackPressed())
+                                .show();
                     }
                 }, ex -> {
-
+                    Log.e(TAG, "publishActivity: " + ex.getMessage());
                 });
     }
 
-    @Override
-    protected String tag() {
-        return TAG;
-    }
 }

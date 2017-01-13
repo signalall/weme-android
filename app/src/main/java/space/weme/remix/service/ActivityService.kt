@@ -88,10 +88,16 @@ interface ActivityService {
             @SerializedName("labe") val labe: String
     )
 
+    data class PublishActivityResp(
+            @SerializedName("id") val id: Int, // Activity id
+            @SerializedName("reason") val reason: String,
+            @SerializedName("state") val state: String
+    )
+
     @POST(Constants.PUBLISH_ACTIVITY)
     fun publishActivity(
             @Body token: PublishActivity
-    ): Observable<Any>
+    ): Observable<PublishActivityResp>
 
     // Todo: Refactor backend interface
     data class SignActivity(
