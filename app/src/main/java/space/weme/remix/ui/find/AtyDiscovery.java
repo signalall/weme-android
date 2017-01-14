@@ -11,6 +11,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.util.ArrayMap;
 import android.support.v7.widget.CardView;
 import android.util.DisplayMetrics;
@@ -62,7 +63,7 @@ public class AtyDiscovery extends BaseActivity {
 
     private static final String TAG = "AtyDiscovery";
 
-    private Subscription getRecommondUser;
+    private List<Subscription> mSubscriptions = new ArrayList<>();
 
     private static final int STATE_FIRST = 0x1;
     private static final int STATE_ANIMATING = 0x2;
@@ -84,6 +85,7 @@ public class AtyDiscovery extends BaseActivity {
 
     private int currentIndex = 0;
 
+    @Nullable
     @BindView(R.id.aty_discovery_background)
     FrameLayout flBackground;
 
@@ -95,17 +97,38 @@ public class AtyDiscovery extends BaseActivity {
         setupViews();
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mCard.stopMedia();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        for (Subscription sub : mSubscriptions) {
+            sub.unsubscribe();
+        }
+    }
+
+    @Override
+    protected String tag() {
+        return TAG;
+    }
+
     @Optional
     @OnClick(R.id.aty_discovery_back)
     public void onImageViewDiscoveryBackClick() {
         finish();
     }
 
+    @Optional
     @OnClick(R.id.aty_discovery_more)
     public void onImageViewDiscoveryMoreClick() {
         ivMoreClicked();
     }
 
+    @Optional
     @OnClick(R.id.aty_discovery_text)
     public void onDiscoveryTextClick() {
         if (state != STATE_ANIMATING) {
@@ -225,7 +248,7 @@ public class AtyDiscovery extends BaseActivity {
         dialog = new Dialog(AtyDiscovery.this, R.style.DialogSlideAnim);
         View content = LayoutInflater.from(this).inflate(R.layout.aty_discovery_option, flBackground, false);
         dialog.setContentView(content);
-        ButterKnife.bind(this, content);
+        ButterKnife.bind(this, dialog);
         WindowManager.LayoutParams wmlp = dialog.getWindow().getAttributes();
         wmlp.gravity = Gravity.BOTTOM | Gravity.START;
         wmlp.x = 0;   //x position
@@ -295,9 +318,12 @@ public class AtyDiscovery extends BaseActivity {
             fetchUser();
             currentIndex = 0;
         }
-        ObjectAnimator a1 = ObjectAnimator.ofFloat(mCard, "TranslationY", mTranslationY, 0)
+        ObjectAnimator a1 = ObjectAnimator
+                .ofFloat(mCard, "TranslationY", mTranslationY, 0)
                 .setDuration(500);
-        ObjectAnimator a2 = ObjectAnimator.ofFloat(mCard, "RotationX", 0, 180).setDuration(500);
+        ObjectAnimator a2 = ObjectAnimator.
+                ofFloat(mCard, "RotationX", 0, 180)
+                .setDuration(500);
         a2.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
@@ -363,23 +389,26 @@ public class AtyDiscovery extends BaseActivity {
     }
 
     private void fetchUser() {
-        if (getRecommondUser != null) {
-            getRecommondUser.unsubscribe();
-        }
         isLoading = true;
-        getRecommondUser = Services.userService()
+        Subscription sub = Services.userService()
                 .getRecommendUser(new UserService.GetRecommendUser(StrUtils.token()))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(resp -> {
                     Log.d(TAG, "getRecommendUser: " + resp.toString());
                     isLoading = false;
-                    if (resp.getResult() != null) {
-                        userList.clear();
-                        userList.addAll(resp.getResult());
-                        if (userList.size() > 0) {
-                            mCard.showUser(userList.get(0));
+                    if ("successful".equals(resp.getState())) {
+                        if (resp.getResult() != null) {
+                            userList.clear();
+                            userList.addAll(resp.getResult());
+                            if (userList.size() > 0) {
+                                mCard.showUser(userList.get(0));
+                            }
                         }
+                    } else {
+                        Toast.makeText(AtyDiscovery.this,
+                                resp.getReason(),
+                                Toast.LENGTH_SHORT).show();
                     }
                 }, ex -> {
                     Log.d(TAG, "getRecommendUser: " + ex.toString());
@@ -388,24 +417,6 @@ public class AtyDiscovery extends BaseActivity {
                             R.string.network_error,
                             Toast.LENGTH_SHORT).show();
                 });
-    }
-
-    @Override
-    protected String tag() {
-        return TAG;
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        mCard.stopMedia();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (getRecommondUser != null) {
-            getRecommondUser.unsubscribe();
-        }
+        mSubscriptions.add(sub);
     }
 }
