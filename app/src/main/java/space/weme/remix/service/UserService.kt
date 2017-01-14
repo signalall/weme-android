@@ -29,6 +29,7 @@ interface UserService {
 
     data class RegisterPhoneResp(
             @SerializedName("state") val state: String,
+            @SerializedName("reason") val reason: String,
             @SerializedName("id") val userId: String,
             @SerializedName("token") val token: String
     )
@@ -168,4 +169,19 @@ interface UserService {
     @POST(Constants.GET_RECOMMEND_USER)
     fun getRecommendUser(@Body body: GetRecommendUser): Observable<ResponseWrapper<List<User>>>
 
+    data class ResetPassword(
+            @SerializedName("phone") val phone: String,
+            @SerializedName("password") val password: String,
+            @SerializedName("code") val code: String
+    )
+
+    data class ResetPasswordResp(
+            @SerializedName("state") val state: String,
+            @SerializedName("reason") val reason: String,
+            @SerializedName("token") val token: String,
+            @SerializedName("id") val id: String
+    )
+
+    @POST(Constants.RESET_PASSWORD)
+    fun resetPassword(@Body body: ResetPassword): Observable<ResetPasswordResp>
 }

@@ -12,12 +12,15 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 import space.weme.remix.R;
@@ -36,9 +39,24 @@ public class AtyRegister extends BaseActivity {
 
     Pattern phone = Pattern.compile(StrUtils.PHONE_PATTERN);
 
+    List<Subscription> mSubscriptions = new ArrayList<>();
+
+    CountDownButton mCountDown;
+
+    ProgressDialog mProgressDialog;
+
+    TextWatcher mTextWatcher;
+
+    @BindView(R.id.phone)
     EditText etName;
+
+    @BindView(R.id.login_password)
     EditText etPass;
+
+    @BindView(R.id.login_copy_password)
     EditText etPass2;
+
+    @BindView(R.id.verification_code)
     EditText etCode;
 
     @BindView(R.id.gain_verification_code)
@@ -50,41 +68,15 @@ public class AtyRegister extends BaseActivity {
     @BindView(R.id.register)
     TextView tvRegister;
 
+    @BindView(R.id.aty_register_error)
     TextView tvError;
 
-    CountDownButton mCountDown;
-    ProgressDialog progressDialog;
-
-
-    TextWatcher mTextWatcher;
-
-    @OnClick(R.id.gain_verification_code)
-    public void onBtnCodeClick() {
-        sendSmsCode();
-        mCountDown.start();
-    }
-
-    @OnClick(R.id.aty_register_contract)
-    public void onButtonContractClick() {
-        Intent i = new Intent(AtyRegister.this, AtyContract.class);
-        startActivity(i);
-    }
-
-    @OnClick(R.id.register)
-    public void onTextEditRegisterClick() {
-        register();
-    }
-
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.aty_register);
         ButterKnife.bind(this);
 
-        etName = (EditText) findViewById(R.id.phone);
-        etPass = (EditText) findViewById(R.id.login_password);
-        etPass2 = (EditText) findViewById(R.id.login_copy_password);
-        tvError = (TextView) findViewById(R.id.aty_register_error);
-        etCode = (EditText) findViewById(R.id.verification_code);
         mCountDown = new CountDownButton(btnCode, btnCode.getText().toString(), 60, 1);
         mTextWatcher = new TextWatcher() {
             @Override
@@ -106,9 +98,42 @@ public class AtyRegister extends BaseActivity {
         etCode.addTextChangedListener(mTextWatcher);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mProgressDialog != null && mProgressDialog.isShowing()) {
+            mProgressDialog.dismiss();
+        }
+        for (Subscription sub : mSubscriptions) {
+            sub.unsubscribe();
+        }
+    }
+
+    @Override
+    protected String tag() {
+        return TAG;
+    }
+
+    @OnClick(R.id.gain_verification_code)
+    public void onBtnCodeClick() {
+        sendSmsCode();
+        mCountDown.start();
+    }
+
+    @OnClick(R.id.aty_register_contract)
+    public void onButtonContractClick() {
+        Intent i = new Intent(AtyRegister.this, AtyContract.class);
+        startActivity(i);
+    }
+
+    @OnClick(R.id.register)
+    public void onTextEditRegisterClick() {
+        register();
+    }
+
     private void sendSmsCode() {
         String phone = etName.getText().toString();
-        Services.userService()
+        Subscription sub = Services.userService()
                 .sendSmsCode(new UserService.SendSmsCode(phone, "1"))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -127,6 +152,7 @@ public class AtyRegister extends BaseActivity {
                             Toast.LENGTH_SHORT)
                             .show();
                 });
+        mSubscriptions.add(sub);
     }
 
     private void checkText() {
@@ -163,16 +189,15 @@ public class AtyRegister extends BaseActivity {
         String name = etName.getText().toString();
         String passwordMd5 = StrUtils.md5(etPass.getText().toString());
         String code = etCode.getText().toString();
-        progressDialog = ProgressDialog.show(AtyRegister.this, null, "正在注册");
+        mProgressDialog = ProgressDialog.show(AtyRegister.this, null, "正在注册");
 
-        Services.userService()
+        Subscription sub = Services.userService()
                 .registerPhone(new UserService.RegisterPhone(name, passwordMd5, code))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(resp -> {
                     Log.d(TAG, "registerPhone: " + resp);
-                    progressDialog.dismiss();
-                    progressDialog = null;
+                    mProgressDialog.dismiss();
                     if ("successful".equals(resp.getState())) {
                         String userId = resp.getUserId();
                         String token = resp.getToken();
@@ -182,11 +207,12 @@ public class AtyRegister extends BaseActivity {
                                 .putString(StrUtils.SP_USER_TOKEN, token).apply();
 
                         Toast.makeText(AtyRegister.this,
-                                "注册成功，请编辑个人信息", Toast.LENGTH_SHORT)
+                                "注册成功，请编辑个人信息",
+                                Toast.LENGTH_SHORT)
                                 .show();
 
                         // 1 second later
-                        rx.Observable.timer(200, TimeUnit.MILLISECONDS)
+                        rx.Observable.timer(500, TimeUnit.MILLISECONDS)
                                 .observeOn(AndroidSchedulers.mainThread())
                                 .subscribe(then -> {
                                     Intent i = new Intent(AtyRegister.this, AtyEditInfo.class);
@@ -197,23 +223,18 @@ public class AtyRegister extends BaseActivity {
                                 });
                     } else { // failed
                         Toast.makeText(AtyRegister.this,
-                                R.string.network_error,
+                                resp.getReason(),
                                 Toast.LENGTH_SHORT)
                                 .show();
                     }
                 }, ex -> {
                     Log.e(TAG, "registerPhone: " + ex.getMessage());
-                    progressDialog.dismiss();
-                    progressDialog = null;
+                    mProgressDialog.dismiss();
                     Toast.makeText(AtyRegister.this,
                             R.string.network_error,
                             Toast.LENGTH_SHORT)
                             .show();
                 });
-    }
-
-    @Override
-    protected String tag() {
-        return TAG;
+        mSubscriptions.add(sub);
     }
 }

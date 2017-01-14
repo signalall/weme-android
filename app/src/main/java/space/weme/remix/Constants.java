@@ -50,7 +50,7 @@ public class Constants {
     public static final String GET_PROFILE = "getprofile";
     public static final String EDIT_PROFILE_URL = "editprofileinfo";
     public static final String LOGIN_URL = "login";
-
+    public static final String RESET_PASSWORD = "resetpassword";
     // find
     public static final String GET_RECOMMEND_USER = "getrecommenduser";
 
