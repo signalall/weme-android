@@ -640,56 +640,61 @@ public class AtyInfo extends BaseActivity {
     }
 
     private void unfollow() {
-        new WDialog.Builder(AtyInfo.this).setMessage(R.string.sure_to_unfollow)
-                .setPositive(R.string.unfollow, new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        ArrayMap<String, String> param = new ArrayMap<>();
-                        param.put("token", StrUtils.token());
-                        param.put("id", mId + "");
-                        OkHttpUtils.post(StrUtils.UNFOLLOW_USER, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
-                            @Override
-                            public void onFailure(IOException e) {
-                                Toast.makeText(AtyInfo.this, R.string.unfollow_fail, Toast.LENGTH_SHORT).show();
-                            }
+        new WDialog.Builder(AtyInfo.this)
+                .setMessage(R.string.sure_to_unfollow)
+                .setPositive(R.string.unfollow, v -> unfollowUser()
+                ).show();
+    }
 
-                            @Override
-                            public void onResponse(String s) {
-                                JSONObject j = OkHttpUtils.parseJSON(AtyInfo.this, s);
-                                if (j == null) {
-                                    Toast.makeText(AtyInfo.this, R.string.unfollow_fail, Toast.LENGTH_SHORT).show();
-                                } else {
-                                    Toast.makeText(AtyInfo.this, R.string.unfollow_success, Toast.LENGTH_SHORT).show();
-                                    configView1();
-                                }
-                            }
-                        });
+    private void unfollowUser() {
+        Services.userService()
+                .unfollowUser(new UserService.UnfollowUser(StrUtils.token(), String.valueOf(mId)))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    if ("successful".equals(resp.getState())) {
+                        Toast.makeText(AtyInfo.this,
+                                R.string.unfollow_success,
+                                Toast.LENGTH_SHORT)
+                                .show();
+                        configView1();
+                    } else {
+                        Toast.makeText(AtyInfo.this,
+                                resp.getReason(),
+                                Toast.LENGTH_SHORT).show();
                     }
-                }).show();
-
+                }, ex -> {
+                    Toast.makeText(AtyInfo.this,
+                            R.string.network_error,
+                            Toast.LENGTH_SHORT)
+                            .show();
+                });
     }
 
     private void follow() {
-        ArrayMap<String, String> param = new ArrayMap<>();
-        param.put("token", StrUtils.token());
-        param.put("id", mId + "");
-        OkHttpUtils.post(StrUtils.FOLLOW_USER, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
-            @Override
-            public void onFailure(IOException e) {
-                Toast.makeText(AtyInfo.this, R.string.follow_fail, Toast.LENGTH_SHORT).show();
-            }
-
-            @Override
-            public void onResponse(String s) {
-                JSONObject j = OkHttpUtils.parseJSON(AtyInfo.this, s);
-                if (j == null) {
-                    Toast.makeText(AtyInfo.this, R.string.follow_fail, Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(AtyInfo.this, R.string.follow_success, Toast.LENGTH_SHORT).show();
-                    configView1();
-                }
-            }
-        });
+        Services.userService()
+                .followUser(new UserService.FollowUser(StrUtils.token(), String.valueOf(mId)))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    if ("successful".equals(resp.getState())) {
+                        Toast.makeText(AtyInfo.this,
+                                R.string.follow_success,
+                                Toast.LENGTH_SHORT)
+                                .show();
+                        configView1();
+                    } else {
+                        Toast.makeText(AtyInfo.this,
+                                resp.getReason(),
+                                Toast.LENGTH_SHORT)
+                                .show();
+                    }
+                }, ex -> {
+                    Toast.makeText(AtyInfo.this,
+                            R.string.network_error,
+                            Toast.LENGTH_SHORT)
+                            .show();
+                });
     }
 
     @Override

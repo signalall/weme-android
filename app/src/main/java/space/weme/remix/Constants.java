@@ -51,6 +51,9 @@ public class Constants {
     public static final String EDIT_PROFILE_URL = "editprofileinfo";
     public static final String LOGIN_URL = "login";
     public static final String RESET_PASSWORD = "resetpassword";
+    public static final String FOLLOW_USER = "follow";
+    public static final String UNFOLLOW_USER = "unfollow";
+
     // find
     public static final String GET_RECOMMEND_USER = "getrecommenduser";
 

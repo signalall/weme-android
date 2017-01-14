@@ -12,7 +12,6 @@ import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.util.ArrayMap;
 import android.support.v7.widget.CardView;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -27,9 +26,6 @@ import android.widget.Toast;
 
 import com.facebook.drawee.view.SimpleDraweeView;
 
-import org.json.JSONObject;
-
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,7 +46,6 @@ import space.weme.remix.ui.user.AtyMessageReply;
 import space.weme.remix.util.BitmapUtils;
 import space.weme.remix.util.DimensionUtils;
 import space.weme.remix.util.LogUtils;
-import space.weme.remix.util.OkHttpUtils;
 import space.weme.remix.util.StrUtils;
 import space.weme.remix.widgt.Card;
 
@@ -132,6 +127,8 @@ public class AtyDiscovery extends BaseActivity {
     @OnClick(R.id.aty_discovery_text)
     public void onDiscoveryTextClick() {
         if (state != STATE_ANIMATING) {
+            updateIndex();
+            updateView();
             startAnimation();
         }
     }
@@ -148,8 +145,8 @@ public class AtyDiscovery extends BaseActivity {
     @OnClick(R.id.aty_discovery_option_follow)
     public void onDiscoveryOptionFollow() {
         if (currentIndex >= userList.size()) return;
-        String id = userList.get(currentIndex).getId() + "";
-        followUser(id);
+        User user = userList.get(currentIndex);
+        followUser(String.valueOf(user.getId()));
         dialog.dismiss();
     }
 
@@ -157,7 +154,8 @@ public class AtyDiscovery extends BaseActivity {
     @OnClick(R.id.aty_discovery_option_message)
     public void onDiscoveryOptionMessage() {
         if (currentIndex >= userList.size()) return;
-        String id = userList.get(currentIndex).getId() + "";
+        User user = userList.get(currentIndex);
+        String id = String.valueOf(user.getId());
         Intent i = new Intent(AtyDiscovery.this, AtyMessageReply.class);
         i.putExtra(AtyMessageReply.INTENT_ID, id);
         startActivity(i);
@@ -257,26 +255,42 @@ public class AtyDiscovery extends BaseActivity {
         dialog.show();
     }
 
-    private void followUser(String id) {
-        ArrayMap<String, String> param = new ArrayMap<>();
-        param.put("token", StrUtils.token());
-        param.put("id", id);
-        OkHttpUtils.post(StrUtils.FOLLOW_USER, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
-            @Override
-            public void onFailure(IOException e) {
-                Toast.makeText(AtyDiscovery.this, R.string.follow_fail, Toast.LENGTH_SHORT).show();
-            }
+    private void updateIndex() {
+        currentIndex++;
+        if (currentIndex >= userList.size() && !isLoading) {
+            fetchUser();
+            currentIndex = 0;
+        }
+    }
 
-            @Override
-            public void onResponse(String s) {
-                JSONObject j = OkHttpUtils.parseJSON(AtyDiscovery.this, s);
-                if (j == null) {
-                    Toast.makeText(AtyDiscovery.this, R.string.follow_fail, Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(AtyDiscovery.this, R.string.follow_success, Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+    private void updateView() {
+        User user = userList.get(currentIndex);
+        // Todo: 获取用户的FollowFlag用来更新对应的视图
+    }
+
+    private void followUser(String id) {
+        Services.userService()
+                .followUser(new UserService.FollowUser(StrUtils.token(), id))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    if ("successful".equals(resp.getState())) {
+                        Toast.makeText(AtyDiscovery.this,
+                                R.string.follow_success,
+                                Toast.LENGTH_SHORT)
+                                .show();
+                    } else {
+                        Toast.makeText(AtyDiscovery.this,
+                                resp.getReason(),
+                                Toast.LENGTH_SHORT)
+                                .show();
+                    }
+                }, ex -> {
+                    Toast.makeText(AtyDiscovery.this,
+                            R.string.network_error,
+                            Toast.LENGTH_SHORT)
+                            .show();
+                });
     }
 
     public void setBackground(Bitmap b) {
@@ -310,14 +324,7 @@ public class AtyDiscovery extends BaseActivity {
                 });
     }
 
-
     private void startAnimation() {
-        LogUtils.d(TAG, "clicked");
-        currentIndex++;
-        if (currentIndex >= userList.size() && !isLoading) {
-            fetchUser();
-            currentIndex = 0;
-        }
         ObjectAnimator a1 = ObjectAnimator
                 .ofFloat(mCard, "TranslationY", mTranslationY, 0)
                 .setDuration(500);
@@ -385,7 +392,6 @@ public class AtyDiscovery extends BaseActivity {
             set.playSequentially(a3, a4, a1, a2);
             set.start();
         }
-
     }
 
     private void fetchUser() {

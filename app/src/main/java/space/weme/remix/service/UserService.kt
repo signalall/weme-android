@@ -184,4 +184,30 @@ interface UserService {
 
     @POST(Constants.RESET_PASSWORD)
     fun resetPassword(@Body body: ResetPassword): Observable<ResetPasswordResp>
+
+    data class FollowUser(
+            @SerializedName("token") val token: String,
+            @SerializedName("id") val id: String
+    )
+
+    data class FollowUserResp(
+            @SerializedName("state") val state: String,
+            @SerializedName("reason") val reason: String
+    )
+
+    @POST(Constants.FOLLOW_USER)
+    fun followUser(@Body body: FollowUser): Observable<FollowUserResp>
+
+    data class UnfollowUser(
+            @SerializedName("token") val token: String,
+            @SerializedName("id") val id: String
+    )
+
+    data class UnfollowUserResp(
+            @SerializedName("state") val state: String,
+            @SerializedName("reason") val reason: String
+    )
+
+    @POST(Constants.UNFOLLOW_USER)
+    fun unfollowUser(@Body body: UnfollowUser): Observable<UnfollowUserResp>
 }

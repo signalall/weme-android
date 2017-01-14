@@ -1,5 +1,7 @@
 package space.weme.remix.service;
 
+import java.util.concurrent.TimeUnit;
+
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
@@ -22,7 +24,8 @@ public class Services {
 
     static {
         OkHttpClient client = new OkHttpClient().newBuilder()
-//                .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
+                .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
+                .readTimeout(15, TimeUnit.SECONDS)
                 .build();
 
         restAdapter = new Retrofit.Builder()

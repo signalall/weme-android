@@ -69,11 +69,6 @@ public final class StrUtils {
 
     public static final String SEND_MESSAGE = BASE_URL + "sendmessage";
 
-
-    public static final String FOLLOW_USER = BASE_URL + "follow";
-
-    public static final String UNFOLLOW_USER = BASE_URL + "unfollow";
-
     public static final String EDIT_CARD_SETTING = BASE_URL + "editprofile/editcardsetting";
 
     public static final String CHECK_UPDATE_URL = BASE_URL + "checkapkversion";
