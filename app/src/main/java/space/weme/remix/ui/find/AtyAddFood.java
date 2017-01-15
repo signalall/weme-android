@@ -1,13 +1,13 @@
 package space.weme.remix.ui.find;
 
 import android.app.Fragment;
+import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.support.v4.util.ArrayMap;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -16,7 +16,10 @@ import android.widget.Toast;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
@@ -26,6 +29,8 @@ import me.nereo.multi_image_selector.MultiImageSelectorActivity;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 import space.weme.remix.R;
+import space.weme.remix.service.FoodService;
+import space.weme.remix.service.Services;
 import space.weme.remix.ui.base.BaseActivity;
 import space.weme.remix.util.LogUtils;
 import space.weme.remix.util.OkHttpUtils;
@@ -45,6 +50,14 @@ public class AtyAddFood extends BaseActivity
     static final int REQUEST_IMAGE = 0x12;
     static final int REQUEST_CROP = 0x13;
 
+    FgtAddFood fgtAddFood;
+
+    FgtPrice fgtPrice;
+
+    FgtFoodMap fgtMap;
+
+    ProgressDialog mProgressDialog;
+
     @BindView(R.id.title_text)
     TextView tvTitle;
 
@@ -53,10 +66,6 @@ public class AtyAddFood extends BaseActivity
 
     @BindView(R.id.frame_container)
     FrameLayout frameContainer;
-
-    FgtAddFood fgtAddFood;
-    FgtPrice fgtPrice;
-    FgtFoodMap fgtMap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,11 +78,6 @@ public class AtyAddFood extends BaseActivity
         fgtMap = FgtFoodMap.newInstance();
 
         setFragment(fgtAddFood);
-    }
-
-    @OnClick(R.id.right_text)
-    public void onRightTextClick() {
-        uploadFood();
     }
 
     @Override
@@ -89,6 +93,33 @@ public class AtyAddFood extends BaseActivity
         } else if (requestCode == REQUEST_CROP) {
             fgtAddFood.setPicture();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mProgressDialog != null && mProgressDialog.isShowing()) {
+            mProgressDialog.dismiss();
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (fgtAddFood.isVisible()) {
+            super.onBackPressed();
+        } else {
+            setFragment(fgtAddFood);
+        }
+    }
+
+    @Override
+    protected String tag() {
+        return TAG;
+    }
+
+    @OnClick(R.id.right_text)
+    public void onRightTextClick() {
+        uploadFood();
     }
 
     private void performCrop(String picUri) {
@@ -142,46 +173,75 @@ public class AtyAddFood extends BaseActivity
             Toast.makeText(this, R.string.please_choose_picutre, Toast.LENGTH_SHORT).show();
             return;
         }
-        ArrayMap<String, String> map = new ArrayMap<>();
-        map.put("token", StrUtils.token());
-        map.put("title", fgtAddFood.etTitle.getText().toString());
-        map.put("comment", fgtAddFood.etComment.getText().toString());
-        map.put("location", fgtAddFood.poiItem.getTitle() + " " + fgtAddFood.poiItem.getSnippet());
-        map.put("latitude", Double.toString(fgtAddFood.poiItem.getLatLonPoint().getLatitude()));
-        map.put("longitude", Double.toString(fgtAddFood.poiItem.getLatLonPoint().getLongitude()));
-        map.put("price", fgtAddFood.price);
-        OkHttpUtils.post(StrUtils.PUBLISH_CARD, map, TAG, new OkHttpUtils.SimpleOkCallBack() {
-            @Override
-            public void onResponse(String s) {
-                JSONObject j = OkHttpUtils.parseJSON(AtyAddFood.this, s);
-                if (j == null) {
-                    return;
-                }
-                String id = j.optString("id");
-                ArrayMap<String, String> params = new ArrayMap<>();
-                params.put("token", StrUtils.token());
-                params.put("type", "-11");
-                params.put("foodcardid", id);
-                OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, params, StrUtils.cropFilePath, StrUtils.MEDIA_TYPE_IMG, TAG, new OkHttpUtils.SimpleOkCallBack() {
-                    @Override
-                    public void onResponse(String s) {
-                        JSONObject j = OkHttpUtils.parseJSON(AtyAddFood.this, s);
-                        if (j == null) {
-                            Toast.makeText(AtyAddFood.this, R.string.upload_food_fail, Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        Toast.makeText(AtyAddFood.this, R.string.upload_food_finish, Toast.LENGTH_SHORT).show();
 
-                        rx.Observable.timer(500, TimeUnit.MILLISECONDS)
-                                .subscribeOn(Schedulers.io())
-                                .observeOn(AndroidSchedulers.mainThread())
-                                .subscribe(resp -> {
-                                    finish();
+        // 制作美食卡片
+
+        String token = StrUtils.token();
+        String title = fgtAddFood.etTitle.getText().toString();
+        String comment = fgtAddFood.etComment.getText().toString();
+        String location = fgtAddFood.poiItem.getTitle() + " " + fgtAddFood.poiItem.getSnippet();
+        String latitude = String.valueOf(fgtAddFood.poiItem.getLatLonPoint().getLatitude());
+        String longitude = String.valueOf(fgtAddFood.poiItem.getLatLonPoint().getLongitude());
+        String price = fgtAddFood.price;
+
+        mProgressDialog = ProgressDialog.show(AtyAddFood.this, null, "正在上传");
+        Services.foodService()
+                .publishCard(new FoodService.PublishCard(token, title, comment, location, latitude, longitude, price))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    if ("successful".equals(resp.getState())) {
+
+                        // 上传图片
+                        Map<String, String> params = new HashMap<>();
+                        params.put("token", StrUtils.token());
+                        params.put("type", "-11");
+                        params.put("foodcardid", resp.getId());
+                        OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, params, StrUtils.cropFilePath, StrUtils.MEDIA_TYPE_IMG, TAG,
+                                new OkHttpUtils.SimpleOkCallBack() {
+
+                                    @Override
+                                    public void onFailure(IOException e) {
+                                        mProgressDialog.dismiss();
+                                        Toast.makeText(AtyAddFood.this,
+                                                R.string.network_error,
+                                                Toast.LENGTH_SHORT)
+                                                .show();
+                                    }
+
+                                    @Override
+                                    public void onResponse(String s) {
+                                        mProgressDialog.dismiss();
+                                        JSONObject j = OkHttpUtils.parseJSON(AtyAddFood.this, s);
+                                        if (j == null) {
+                                            return;
+                                        }
+                                        Toast.makeText(AtyAddFood.this,
+                                                R.string.upload_food_finish,
+                                                Toast.LENGTH_SHORT)
+                                                .show();
+                                        rx.Observable.timer(200, TimeUnit.MILLISECONDS)
+                                                .subscribeOn(Schedulers.io())
+                                                .observeOn(AndroidSchedulers.mainThread())
+                                                .subscribe(resp -> {
+                                                    finish();
+                                                });
+                                    }
                                 });
+                    } else {
+                        mProgressDialog.dismiss();
+                        Toast.makeText(AtyAddFood.this,
+                                resp.getReason(),
+                                Toast.LENGTH_SHORT)
+                                .show();
                     }
+                }, ex -> {
+                    mProgressDialog.dismiss();
+                    Toast.makeText(AtyAddFood.this,
+                            R.string.network_error,
+                            Toast.LENGTH_SHORT)
+                            .show();
                 });
-            }
-        });
     }
 
     public void setFragment(Fragment frag) {
@@ -199,20 +259,6 @@ public class AtyAddFood extends BaseActivity
             tvTitle.setText(R.string.location);
             tvRight.setVisibility(View.GONE);
         }
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (fgtAddFood.isVisible()) {
-            super.onBackPressed();
-        } else {
-            setFragment(fgtAddFood);
-        }
-    }
-
-    @Override
-    protected String tag() {
-        return TAG;
     }
 
     @Override

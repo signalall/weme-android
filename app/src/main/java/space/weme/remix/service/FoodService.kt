@@ -35,7 +35,24 @@ interface FoodService {
     )
 
     @POST(Constants.LIKE_FOOD_URL)
-    fun likeFood(
-            @Body token: LikeFood
-    ): Observable<LikeFoodResp>
+    fun likeFood(@Body token: LikeFood): Observable<LikeFoodResp>
+
+    data class PublishCard(
+            @SerializedName("token") val token: String,
+            @SerializedName("title") val title: String,
+            @SerializedName("comment") val comment: String,
+            @SerializedName("location") val location: String,
+            @SerializedName("latitude") val latitude: String,
+            @SerializedName("longitude") val longitude: String,
+            @SerializedName("price") val price: String
+    )
+
+    data class PublicCardResp(
+            @SerializedName("state") val state: String,
+            @SerializedName("reason") val reason: String,
+            @SerializedName("id") val id: String
+    )
+
+    @POST(Constants.PUBLISH_CARD)
+    fun publishCard(@Body body: PublishCard): Observable<PublicCardResp>
 }

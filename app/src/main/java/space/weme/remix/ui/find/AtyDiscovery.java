@@ -264,8 +264,10 @@ public class AtyDiscovery extends BaseActivity {
     }
 
     private void updateView() {
-        User user = userList.get(currentIndex);
-        // Todo: 获取用户的FollowFlag用来更新对应的视图
+        if (currentIndex < userList.size()) {
+            // User user = userList.get(currentIndex);
+            // Todo: 获取用户的FollowFlag用来更新对应的视图
+        }
     }
 
     private void followUser(String id) {

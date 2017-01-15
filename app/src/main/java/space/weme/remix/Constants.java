@@ -42,6 +42,7 @@ public class Constants {
     public static final String GET_RECOMMEND_FOOD = "getfoodcard";
     public static final String LIKE_FOOD_URL = "likefoodcard";
     public static final String UNLIKE_FOOD_URL = "unlikefoodcard";
+    public static final String PUBLISH_CARD = "publishcard";
 
     // User
     public static final String SEND_SMS_CODE = "sendsmscode";
