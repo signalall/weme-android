@@ -24,6 +24,7 @@ public class Constants {
 
     public static final String GET_TOPIC_INFO = "gettopicslogan";
     public static final String GET_TOPIC_LIST = "gettopiclist";
+    public static final String TOP_BROAD_URL = "topofficial";
 
     // Activity
     public static final String SEARCH_ACTIVITY = "searchactivity";
@@ -37,6 +38,8 @@ public class Constants {
     public static final String DEL_SIGN_ACTIVITY = "deletesignup";
     public static final String PUBLISH_ACTIVITY = "publishactivity";
     public static final String UNLIKE_ACTIVITY = "unlikeactivity";
+    public static final String GET_TOP_ACTIVITY_URL = "activitytopofficial";
+
 
     // Food
     public static final String GET_RECOMMEND_FOOD = "getfoodcard";
@@ -54,8 +57,11 @@ public class Constants {
     public static final String RESET_PASSWORD = "resetpassword";
     public static final String FOLLOW_USER = "follow";
     public static final String UNFOLLOW_USER = "unfollow";
+    public static final String GET_UNREAD_MESSAGE_URL = "unreadmessagenum";
 
     // find
     public static final String GET_RECOMMEND_USER = "getrecommenduser";
 
+
+    public static final String STATE_SUCCESSFUL = "successful";
 }

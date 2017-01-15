@@ -9,7 +9,7 @@ import com.google.gson.annotations.SerializedName;
  * Created by Liujilong on 2016/1/27.
  * liujilong.me@gmail.com
  */
-public class PostTopic implements Parcelable {
+public class Topic implements Parcelable {
 
     @SerializedName("id")
     public String id;
@@ -92,10 +92,10 @@ public class PostTopic implements Parcelable {
         dest.writeString(this.slogan);
     }
 
-    public PostTopic() {
+    public Topic() {
     }
 
-    protected PostTopic(Parcel in) {
+    protected Topic(Parcel in) {
         this.id = in.readString();
         this.imageUrl = in.readString();
         this.note = in.readString();
@@ -104,21 +104,21 @@ public class PostTopic implements Parcelable {
         this.slogan = in.readString();
     }
 
-    public static final Creator<PostTopic> CREATOR = new Creator<PostTopic>() {
+    public static final Creator<Topic> CREATOR = new Creator<Topic>() {
         @Override
-        public PostTopic createFromParcel(Parcel source) {
-            return new PostTopic(source);
+        public Topic createFromParcel(Parcel source) {
+            return new Topic(source);
         }
 
         @Override
-        public PostTopic[] newArray(int size) {
-            return new PostTopic[size];
+        public Topic[] newArray(int size) {
+            return new Topic[size];
         }
     };
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PostTopic{");
+        final StringBuilder sb = new StringBuilder("Topic{");
         sb.append("id='").append(id).append('\'');
         sb.append(", imageUrl='").append(imageUrl).append('\'');
         sb.append(", note='").append(note).append('\'');

@@ -23,7 +23,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import space.weme.remix.R;
 import space.weme.remix.model.Post;
-import space.weme.remix.model.PostTopic;
+import space.weme.remix.model.Topic;
 import space.weme.remix.ui.AtyImage;
 import space.weme.remix.ui.user.AtyInfo;
 import space.weme.remix.util.StrUtils;
@@ -37,7 +37,7 @@ import space.weme.remix.widgt.GridLayout;
 public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Context mContext;
     private List<Post> mPostList;
-    private PostTopic mPostTopic;
+    private Topic mTopic;
 
     private final int TYPE_ITEM = 0x2;
     private final int TYPE_PROGRESS = 0x3;
@@ -70,7 +70,7 @@ public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
                     Post post = (Post) v.getTag();
                     Intent i = new Intent(mContext, AtyPost.class);
                     i.putExtra(AtyPost.POST_INTENT, post.getPostId());
-                    i.putExtra(AtyPost.THEME_INTENT, mPostTopic == null ? "" : mPostTopic.theme);
+                    i.putExtra(AtyPost.THEME_INTENT, mTopic == null ? "" : mTopic.theme);
                     mContext.startActivity(i);
                 }
 
@@ -82,8 +82,8 @@ public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         mPostList = postList;
     }
 
-    void setTopic(PostTopic postTopic) {
-        mPostTopic = postTopic;
+    void setTopic(Topic topic) {
+        mTopic = topic;
     }
 
 

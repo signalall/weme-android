@@ -20,7 +20,7 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import space.weme.remix.R;
 import space.weme.remix.ui.base.BaseActivity;
-import space.weme.remix.ui.main.AtyMain;
+import space.weme.remix.ui.main.MainActivity;
 import space.weme.remix.util.LogUtils;
 import space.weme.remix.util.OkHttpUtils;
 import space.weme.remix.util.StrUtils;
@@ -46,9 +46,9 @@ public class AtySetting extends BaseActivity {
     public void onLogoutClick() {
         SharedPreferences sp = getSharedPreferences(StrUtils.SP_USER, Context.MODE_PRIVATE);
         sp.edit().remove(StrUtils.SP_USER_ID).remove(StrUtils.SP_USER_TOKEN).apply();
-        Intent i = new Intent(this, AtyMain.class);
+        Intent i = new Intent(this, MainActivity.class);
         i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        i.putExtra(AtyMain.INTENT_LOGOUT, true);
+        i.putExtra(MainActivity.INTENT_LOGOUT, true);
         startActivity(i);
     }
 

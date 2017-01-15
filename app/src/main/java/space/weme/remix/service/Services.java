@@ -19,7 +19,7 @@ public class Services {
     private static TopicService mTopicService;
     private static FoodService mFoodService;
     private static ActivityService mActivityService;
-    private static UserService mUserSerivce;
+    private static UserService mUserService;
     private static Retrofit restAdapter;
 
     static {
@@ -65,8 +65,8 @@ public class Services {
     }
 
     public static UserService userService() {
-        if (mUserSerivce == null)
-            mUserSerivce = Services.create(UserService.class);
-        return mUserSerivce;
+        if (mUserService == null)
+            mUserService = Services.create(UserService.class);
+        return mUserService;
     }
 }

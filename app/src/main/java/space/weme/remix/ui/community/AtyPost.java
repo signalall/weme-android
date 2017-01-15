@@ -106,7 +106,6 @@ public class AtyPost extends SwipeActivity {
                 if (!isLoading &&
                         (totalItemCount - visibleItemCount) <= (firstVisibleItem + 2) &&
                         morePages) {
-                    Log.i(TAG, "scroll to end  load page " + (pageNumber + 1));
                     loadPage();
                 }
             }

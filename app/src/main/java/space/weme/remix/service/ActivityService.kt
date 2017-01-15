@@ -8,6 +8,7 @@ import space.weme.remix.Constants
 import space.weme.remix.model.Activity
 import space.weme.remix.model.AtyDetail
 import space.weme.remix.model.ResponseWrapper
+import space.weme.remix.model.TopActivity
 
 /**
  * Created by Joyce on 2017/1/3.
@@ -52,6 +53,12 @@ interface ActivityService {
 
     // Todo: Refactor backend interface
     class GetActivityInfoResp {
+
+        @SerializedName("state")
+        var state: String? = ""
+
+        @SerializedName("reason")
+        var reason: String? = ""
 
         @SerializedName("pages")
         var pages: Int = 0
@@ -142,7 +149,12 @@ interface ActivityService {
     )
 
     @POST(Constants.UNLIKE_ACTIVITY)
-    fun unlikeActivity(
-            @Body token: UnlikeActivity
-    ): Observable<Any>
+    fun unlikeActivity(@Body body: UnlikeActivity): Observable<Any>
+
+    data class GetTopActivity(
+            @SerializedName("token") val token: String
+    )
+
+    @POST(Constants.GET_TOP_ACTIVITY_URL)
+    fun getTopActivity(@Body body: GetTopActivity): Observable<ResponseWrapper<List<TopActivity>>>
 }

@@ -210,4 +210,17 @@ interface UserService {
 
     @POST(Constants.UNFOLLOW_USER)
     fun unfollowUser(@Body body: UnfollowUser): Observable<UnfollowUserResp>
+
+    data class GetUnreadMessage(
+            @SerializedName("token") val token: String
+    )
+
+    data class GetUnreadMessageResp(
+            @SerializedName("state") val state: String,
+            @SerializedName("reason") val reason: String,
+            @SerializedName("number") val number: String
+    )
+
+    @POST(Constants.GET_UNREAD_MESSAGE_URL)
+    fun getUnreadMessage(@Body body: GetUnreadMessage): Observable<GetUnreadMessageResp>
 }

@@ -186,7 +186,7 @@ public class AtyAddFood extends BaseActivity
 
         mProgressDialog = ProgressDialog.show(AtyAddFood.this, null, "正在上传");
         Services.foodService()
-                .publishCard(new FoodService.PublishCard(token, title, comment, location, latitude, longitude, price))
+                .publishFood(new FoodService.PublishFood(token, title, comment, location, latitude, longitude, price))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(resp -> {

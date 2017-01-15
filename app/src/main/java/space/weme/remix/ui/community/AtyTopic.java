@@ -25,7 +25,7 @@ import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 import space.weme.remix.R;
 import space.weme.remix.model.Post;
-import space.weme.remix.model.PostTopic;
+import space.weme.remix.model.Topic;
 import space.weme.remix.service.PostService;
 import space.weme.remix.service.Services;
 import space.weme.remix.service.TopicService;
@@ -45,7 +45,7 @@ public class AtyTopic extends SwipeActivity {
     private static final int REQUEST_NEW_POST = 0xef;
 
     private String mTopicId;
-    private PostTopic mPostTopic;
+    private Topic mTopic;
     private ArrayList<Post> mPostList;
     private boolean isRefreshing = false;
     private boolean isLoading = false;
@@ -181,11 +181,11 @@ public class AtyTopic extends SwipeActivity {
                     if (resp.getResult() == null) {
                         return;
                     }
-                    mPostTopic = resp.getResult();
-                    mImage.setImageURI(Uri.parse(mPostTopic.imageUrl));
-                    mTvSlogan.setText(mPostTopic.slogan);
-                    mTvTheme.setText(mPostTopic.theme);
-                    mPostListAdapter.setTopic(mPostTopic);
+                    mTopic = resp.getResult();
+                    mImage.setImageURI(Uri.parse(mTopic.imageUrl));
+                    mTvSlogan.setText(mTopic.slogan);
+                    mTvTheme.setText(mTopic.theme);
+                    mPostListAdapter.setTopic(mTopic);
                     mPostListAdapter.notifyDataSetChanged();
                 }, ex -> {
                     Log.e(TAG, "getTopicInfo: " + ex.getMessage());

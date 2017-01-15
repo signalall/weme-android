@@ -37,7 +37,7 @@
         <activity android:name=".ui.intro.AtyEditInfo"  />
         <activity android:name=".ui.intro.AtySearchCity" />
 
-        <activity android:name=".ui.main.AtyMain" />
+        <activity android:name=".ui.main.MainActivity" />
         <activity android:name=".ui.community.AtyPostNew" />
         <activity android:name=".ui.community.AtyPostReply" />
         <activity android:name=".ui.community.AtyTopic"  android:theme="@style/AppTheme.Translucent"/>

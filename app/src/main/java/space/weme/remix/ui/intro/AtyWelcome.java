@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 
 import com.facebook.common.util.UriUtil;
 import com.facebook.drawee.view.SimpleDraweeView;
@@ -15,7 +14,7 @@ import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 import space.weme.remix.R;
 import space.weme.remix.ui.base.BaseActivity;
-import space.weme.remix.ui.main.AtyMain;
+import space.weme.remix.ui.main.MainActivity;
 import space.weme.remix.util.BitmapUtils;
 import space.weme.remix.util.DimensionUtils;
 import space.weme.remix.util.StrUtils;
@@ -67,8 +66,8 @@ public class AtyWelcome extends BaseActivity {
     }
 
     private void main() {
-        Intent i = new Intent(AtyWelcome.this, AtyMain.class);
-        i.putExtra(AtyMain.INTENT_UPDATE, true);
+        Intent i = new Intent(AtyWelcome.this, MainActivity.class);
+        i.putExtra(MainActivity.INTENT_UPDATE, true);
         startActivity(i);
     }
 

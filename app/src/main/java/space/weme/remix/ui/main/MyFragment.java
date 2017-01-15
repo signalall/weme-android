@@ -6,11 +6,6 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.MessageQueue;
-import android.support.annotation.Nullable;
-import android.support.v4.util.ArrayMap;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -31,16 +26,16 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 
-import org.json.JSONObject;
-
 import java.util.EnumMap;
 import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
+import space.weme.remix.Constants;
 import space.weme.remix.R;
 import space.weme.remix.model.User;
 import space.weme.remix.service.Services;
@@ -54,16 +49,15 @@ import space.weme.remix.ui.user.AtySetting;
 import space.weme.remix.ui.user.AtyUserActivity;
 import space.weme.remix.util.DimensionUtils;
 import space.weme.remix.util.LogUtils;
-import space.weme.remix.util.OkHttpUtils;
 import space.weme.remix.util.StrUtils;
 
 /**
  * Created by Liujilong on 16/1/24.
- * liujilong.me@gmail.com
+ * liujilong.mMe@gmail.com
  */
-public class FgtMe extends BaseFragment {
+public class MyFragment extends BaseFragment {
 
-    private static final String TAG = "FgtMe";
+    private static final String TAG = MyFragment.class.getSimpleName();
 
     @BindView(R.id.fgt_me_avatar)
     SimpleDraweeView mDraweeAvatar;
@@ -72,118 +66,41 @@ public class FgtMe extends BaseFragment {
     LinearLayout llLayout;
 
     @BindView(R.id.fgt_me_name)
-    TextView mTvName;
+    TextView mNameTextView;
 
     @BindView(R.id.fgt_me_count)
-    TextView mTvCount;
+    TextView mUnreadMessageTextView;
 
-    View qrCodeView;
-    boolean isQrCodeShowing = false;
+    private View mQRCodeView;
+    private Bitmap mQRBitmap;
+    private User mMe;
+    private boolean isQrCodeShowing = false;
 
-    User me;
-    Bitmap mQRBitmap;
-
-    public static FgtMe newInstance() {
+    public static MyFragment newInstance() {
         Bundle args = new Bundle();
-        final FgtMe fragment = new FgtMe();
+        final MyFragment fragment = new MyFragment();
         fragment.setArguments(args);
-        Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
-            @Override
-            public boolean queueIdle() {
-                LogUtils.i(TAG, "in Idle Handler");
-                new Thread() {
-                    @Override
-                    public void run() {
-                        try {
-                            fragment.drawQRCode();
-                        } catch (WriterException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }.run();
-                return false;
-            }
-        });
         return fragment;
     }
 
-
-    @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View rootView = inflater.inflate(R.layout.fgt_me, container, false);
+        View rootView = inflater.inflate(R.layout.fragment_my, container, false);
         ButterKnife.bind(this, rootView);
-
-        RoundingParams roundingParams = RoundingParams.fromCornersRadius(5f);
-        roundingParams.setRoundAsCircle(true);
-        mDraweeAvatar.getHierarchy().setRoundingParams(roundingParams);
+        setupViews();
+        drawQRCodeAsync().subscribe(dummy -> {
+        }, ex -> {
+        });
         return rootView;
     }
-
 
     @Override
     public void onResume() {
         super.onResume();
-        fetchUnreadMessage();
-        fetchNameInfo();
+        loadUnreadMessage();
+        loadProfile();
         mDraweeAvatar.setImageURI(Uri.parse(StrUtils.thumForID(StrUtils.id() + "")));
     }
-
-    private void fetchUnreadMessage() {
-        ArrayMap<String, String> param = new ArrayMap<>();
-        param.put("token", StrUtils.token());
-        OkHttpUtils.post(StrUtils.GET_UNREAD_MESSAGE_URL, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
-            @Override
-            public void onResponse(String s) {
-                //LogUtils.i(TAG, s);
-                JSONObject j = OkHttpUtils.parseJSON(getActivity(), s);
-                if (j == null) {
-                    return;
-                }
-                String number = j.optString("number");
-                int count;
-                try {
-                    count = Integer.parseInt(number);
-                } catch (NumberFormatException e) {
-                    return;
-                }
-                if (count <= 0) {
-                    mTvCount.setVisibility(View.GONE);
-                    return;
-                }
-                mTvCount.setVisibility(View.VISIBLE);
-                if (count < 10) {
-                    mTvCount.setText(number);
-                    mTvCount.setTextSize(16);
-                } else if (count < 100) {
-                    mTvCount.setText(number);
-                    mTvCount.setTextSize(14);
-                } else {
-                    mTvCount.setTextSize(12);
-                    mTvCount.setText(R.string.more_than_99);
-                }
-            }
-        });
-    }
-
-    private void fetchNameInfo() {
-        Services.userService()
-                .getProfile(new UserService.GetProfile(StrUtils.token()))
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(resp -> {
-                    Log.d(TAG, "getProfile: " + resp.toString());
-                    me = resp;
-                    mTvName.setText(me.getName());
-                    showQRCodeUserInfo();
-                }, ex -> {
-                    Log.e(TAG, "getProfile: " + ex.toString());
-                    Toast.makeText(getActivity(),
-                            R.string.network_error,
-                            Toast.LENGTH_SHORT).show();
-                });
-    }
-
 
     @OnClick(R.id.fgt_me_me)
     public void onMeClick() {
@@ -232,38 +149,96 @@ public class FgtMe extends BaseFragment {
         return TAG;
     }
 
+    private void setupViews() {
+        RoundingParams roundingParams = RoundingParams.fromCornersRadius(5f);
+        roundingParams.setRoundAsCircle(true);
+        mDraweeAvatar.getHierarchy().setRoundingParams(roundingParams);
+    }
+
+    private void loadUnreadMessage() {
+        Services.userService()
+                .getUnreadMessage(new UserService.GetUnreadMessage(StrUtils.token()))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    if (Constants.STATE_SUCCESSFUL.equals(resp.getState())) {
+                        int number = Integer.parseInt(resp.getNumber());
+                        if (number <= 0) {
+                            mUnreadMessageTextView.setVisibility(View.GONE);
+                            return;
+                        }
+                        mUnreadMessageTextView.setVisibility(View.VISIBLE);
+                        if (number < 10) {
+                            mUnreadMessageTextView.setText(number);
+                            mUnreadMessageTextView.setTextSize(16);
+                        } else if (number < 100) {
+                            mUnreadMessageTextView.setText(number);
+                            mUnreadMessageTextView.setTextSize(14);
+                        } else {
+                            mUnreadMessageTextView.setTextSize(12);
+                            mUnreadMessageTextView.setText(R.string.more_than_99);
+                        }
+                    } else {
+                        Toast.makeText(getActivity(),
+                                resp.getReason(),
+                                Toast.LENGTH_SHORT).show();
+                    }
+                }, ex -> {
+                    Log.e(TAG, "getUnreadMessage: " + ex.toString());
+                    Toast.makeText(getActivity(),
+                            R.string.network_error,
+                            Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void loadProfile() {
+        Services.userService()
+                .getProfile(new UserService.GetProfile(StrUtils.token()))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "getProfile: " + resp.toString());
+                    mMe = resp;
+                    mNameTextView.setText(mMe.getName());
+                    showQRCodeUserInfo();
+                }, ex -> {
+                    Log.e(TAG, "getProfile: " + ex.toString());
+                    Toast.makeText(getActivity(),
+                            R.string.network_error,
+                            Toast.LENGTH_SHORT).show();
+                });
+    }
+
     private void showQRCode() {
         LogUtils.i(TAG, "showQRCode");
         final Dialog dialog = new Dialog(getActivity(), R.style.DialogTransparent);
-        qrCodeView = LayoutInflater.from(getActivity()).inflate(R.layout.qrcode_user, llLayout, false);
+        mQRCodeView = LayoutInflater.from(getActivity()).inflate(R.layout.qrcode_user, llLayout, false);
         final int size = DimensionUtils.getDisplay().widthPixels * 4 / 5 - DimensionUtils.dp2px(32);
-        final ImageView qr_code = (ImageView) qrCodeView.findViewById(R.id.qr_code);
-        ViewGroup.LayoutParams param = qr_code.getLayoutParams();
+        final ImageView imageView = (ImageView) mQRCodeView.findViewById(R.id.qr_code);
+        ViewGroup.LayoutParams param = imageView.getLayoutParams();
         param.width = size;
         param.height = size;
 
         if (mQRBitmap != null) {
-            qr_code.setImageBitmap(mQRBitmap);
+            imageView.setImageBitmap(mQRBitmap);
         } else {
-            drawQRCodeWithCallBack(qr_code);
+            drawQRCodeAsync().subscribe(dummy -> {
+                imageView.setImageBitmap(mQRBitmap);
+            }, ex -> {
+            });
         }
 
-        SimpleDraweeView avatar = (SimpleDraweeView) qrCodeView.findViewById(R.id.avatar);
+        SimpleDraweeView avatar = (SimpleDraweeView) mQRCodeView.findViewById(R.id.avatar);
         avatar.setImageURI(Uri.parse(StrUtils.thumForID(StrUtils.id())));
 
         showQRCodeUserInfo();
 
-
-        qrCodeView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                dialog.dismiss();
-                isQrCodeShowing = false;
-            }
+        mQRCodeView.setOnClickListener(v -> {
+            dialog.dismiss();
+            isQrCodeShowing = false;
         });
 
-
-        dialog.setContentView(qrCodeView);
+        dialog.setContentView(mQRCodeView);
         WindowManager.LayoutParams wmlp = dialog.getWindow().getAttributes();
         wmlp.gravity = Gravity.CENTER;
         dialog.show();
@@ -271,17 +246,16 @@ public class FgtMe extends BaseFragment {
     }
 
     private void showQRCodeUserInfo() {
-        if (qrCodeView != null && isQrCodeShowing) {
-            TextView name = (TextView) qrCodeView.findViewById(R.id.name);
-            name.setText(me.getName());
-            TextView school = (TextView) qrCodeView.findViewById(R.id.school);
-            school.setText(me.getSchool());
-            ImageView iv = (ImageView) qrCodeView.findViewById(R.id.gender);
-            boolean male = getResources().getString(R.string.male).equals(me.getGender());
+        if (mQRCodeView != null && isQrCodeShowing) {
+            TextView name = (TextView) mQRCodeView.findViewById(R.id.name);
+            name.setText(mMe.getName());
+            TextView school = (TextView) mQRCodeView.findViewById(R.id.school);
+            school.setText(mMe.getSchool());
+            ImageView iv = (ImageView) mQRCodeView.findViewById(R.id.gender);
+            boolean male = getResources().getString(R.string.male).equals(mMe.getGender());
             iv.setImageResource(male ? R.mipmap.boy : R.mipmap.girl);
         }
     }
-
 
     private void drawQRCode() throws WriterException {
         if (mQRBitmap != null) {
@@ -306,23 +280,17 @@ public class FgtMe extends BaseFragment {
         }
     }
 
-    private void drawQRCodeWithCallBack(final ImageView iv) {
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    drawQRCode();
-                    Handler handler = new Handler(Looper.getMainLooper());
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            iv.setImageBitmap(mQRBitmap);
-                        }
-                    });
-                } catch (WriterException e) {
-                    e.printStackTrace();
-                }
-            }
-        }.run();
+    private Observable<Object> drawQRCodeAsync() {
+        return rx.Observable
+                .create(subscriber -> {
+                    try {
+                        drawQRCode();
+                        subscriber.onNext("");
+                    } catch (WriterException e) {
+                        subscriber.onError(e);
+                    }
+                })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread());
     }
 }

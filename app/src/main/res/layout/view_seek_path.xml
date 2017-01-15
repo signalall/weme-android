@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<space.weme.remix.widgt.FindFoodPath xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:background="@mipmap/find_background"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <ImageView
-        android:id="@+id/earth"
+        android:id="@+id/earth_image_view"
         android:layout_gravity="center"
         android:src="@mipmap/earth"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
     <ImageView
-        android:id="@+id/plane"
+        android:id="@+id/plane_image_view"
         android:src="@mipmap/plane"
         android:layout_gravity="center"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
     <LinearLayout
         android:layout_gravity="center"
-        android:id="@+id/food_layout"
+        android:id="@+id/food_linear_layout"
         android:orientation="vertical"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
         <ImageView
-            android:id="@+id/fgt_find_food"
+            android:id="@+id/food_image_view"
             android:src="@mipmap/find_food"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
@@ -37,12 +37,12 @@
     </LinearLayout>
     <LinearLayout
         android:layout_gravity="center"
-        android:id="@+id/friend_layout"
+        android:id="@+id/friend_linear_layout"
         android:orientation="vertical"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
         <ImageView
-            android:id="@+id/fgt_find_friend"
+            android:id="@+id/friend_image_view"
             android:src="@mipmap/find_boy"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
@@ -55,4 +55,4 @@
             android:layout_height="wrap_content" />
     </LinearLayout>
 
-</space.weme.remix.widgt.FindFoodPath>
+</FrameLayout>

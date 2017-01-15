@@ -39,12 +39,6 @@ public final class StrUtils {
 
     private static final String BASE_URL_NGINX = "http://218.244.147.240/";
 
-    public static final String GET_TOP_ACTIVITY_URL = BASE_URL + "activitytopofficial";
-
-    public static final String TOP_BROAD_URL = BASE_URL + "topofficial";
-
-    public static final String GET_UNREAD_MESSAGE_URL = BASE_URL + "unreadmessagenum";
-
     public static final String GET_VISIT_INFO = BASE_URL + "visitinfo";
 
     public static final String VISIT_USER = BASE_URL + "visit";

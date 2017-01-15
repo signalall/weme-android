@@ -1,11 +1,9 @@
 package space.weme.remix.ui.main;
 
-import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.util.ArrayMap;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -22,23 +20,21 @@ import android.widget.Toast;
 import com.facebook.drawee.generic.RoundingParams;
 import com.facebook.drawee.view.SimpleDraweeView;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import java.util.ArrayList;
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 import space.weme.remix.R;
 import space.weme.remix.model.Activity;
+import space.weme.remix.model.TopActivity;
 import space.weme.remix.service.ActivityService;
 import space.weme.remix.service.Services;
 import space.weme.remix.ui.aty.AtyActivityDetail;
 import space.weme.remix.ui.base.BaseFragment;
 import space.weme.remix.util.DimensionUtils;
 import space.weme.remix.util.LogUtils;
-import space.weme.remix.util.OkHttpUtils;
 import space.weme.remix.util.StrUtils;
 import space.weme.remix.widgt.PageIndicator;
 
@@ -46,25 +42,30 @@ import space.weme.remix.widgt.PageIndicator;
  * Created by Liujilong on 16/1/24.
  * liujilong.me@gmail.com
  */
-public class FgtActivity extends BaseFragment {
+public class ActivityFragment extends BaseFragment {
 
-    private static final String TAG = "FgtActivity";
+    private static final String TAG = "ActivityFragment";
 
     // views
-    private SwipeRefreshLayout mSwipeLayout;
+    @BindView(R.id.fgt_activity_swipe_layout)
+    SwipeRefreshLayout mSwipeLayout;
 
-    private TopAdapter mTopAdapter;
-    private Adapter mRvAdapter;
+    @BindView(R.id.fgt_activity_recycler_view)
+    RecyclerView mActivityListRecyclerView;
+
+    private TopActivityListAdapter mTopActivityListAdapter;
+    private ActivityListAdapter mActivityListAdapter;
 
     // data
-    int page = 1;
-    boolean isLoading = false;
-    boolean isRefreshing = false;
-    boolean canLoadMore = true;
+    private int pageNumber = 0;
+    private boolean isRefreshing = false;
+    private boolean isLoadingActivity = false;
+    private boolean isLoadingTopActivity = false;
+    private boolean morePages = true;
 
-    public static FgtActivity newInstance() {
+    public static ActivityFragment newInstance() {
         Bundle args = new Bundle();
-        FgtActivity fragment = new FgtActivity();
+        ActivityFragment fragment = new ActivityFragment();
         fragment.setArguments(args);
         return fragment;
     }
@@ -72,22 +73,22 @@ public class FgtActivity extends BaseFragment {
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View rootView = inflater.inflate(R.layout.fgt_activity, container, false);
-        mSwipeLayout = (SwipeRefreshLayout) rootView.findViewById(R.id.fgt_activity_swipe_layout);
+        View rootView = inflater.inflate(R.layout.fragment_activity, container, false);
+        ButterKnife.bind(this, rootView);
         mSwipeLayout.setColorSchemeResources(R.color.colorPrimary);
         mSwipeLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                if (isRefreshing) {
-                    LogUtils.d(TAG, "ignore manually update!");
-                } else {
-                    refresh();
+                if (!isRefreshing) {
+                    if (!isLoadingTopActivity)
+                        loadTopActivity();
+                    if (!isLoadingActivity && morePages)
+                        loadActivity();
                 }
             }
         });
-        RecyclerView mRecyclerView = (RecyclerView) rootView.findViewById(R.id.fgt_activity_recycler_view);
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+        mActivityListRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        mActivityListRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
@@ -95,88 +96,105 @@ public class FgtActivity extends BaseFragment {
                 int visibleItemCount = recyclerView.getChildCount();
                 int totalItemCount = layoutManager.getItemCount();
                 int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
-                if (!isLoading && (totalItemCount - visibleItemCount)
-                        <= (firstVisibleItem + 2) && canLoadMore) {
-                    Log.i(TAG, "scroll to end  load page " + (page + 1));
-                    loadPage(page + 1);
+                if (!isLoadingActivity && (totalItemCount - visibleItemCount) <= (firstVisibleItem + 2) && morePages) {
+                    loadActivity();
                 }
             }
         });
-
-
-        mTopAdapter = new TopAdapter(getActivity());
-        mTopAdapter.setListener(new View.OnClickListener() {
+        mTopActivityListAdapter = new TopActivityListAdapter();
+        mTopActivityListAdapter.setListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 int id = (int) v.getTag();
-                Intent detail = new Intent(getActivity(), AtyActivityDetail.class);
-                detail.putExtra("activityid", id);
-                //LogUtils.d(TAG, "id:" + mActivityList.get(getAdapterPosition() - 1).activityID);
-                startActivity(detail);
+                Intent intent = new Intent(getActivity(), AtyActivityDetail.class);
+                intent.putExtra("activityid", id);
+                startActivity(intent);
             }
         });
-        mRvAdapter = new Adapter();
-        mRecyclerView.setAdapter(mRvAdapter);
-        refresh();
+        mActivityListAdapter = new ActivityListAdapter();
+        mActivityListRecyclerView.setAdapter(mActivityListAdapter);
+
+        //
+        pageNumber = 0;
+        loadTopActivity();
+        loadActivity();
         return rootView;
     }
 
-    private void refresh() {
-        isRefreshing = true;
-        canLoadMore = true;
-        ArrayMap<String, String> params = new ArrayMap<>(3);
-        params.put("token", StrUtils.token());
-        OkHttpUtils.post(StrUtils.GET_TOP_ACTIVITY_URL, params, TAG, new OkHttpUtils.SimpleOkCallBack() {
-            @Override
-            public void onResponse(String s) {
-                //LogUtils.i(TAG, s);
-                JSONObject j = OkHttpUtils.parseJSON(getActivity(), s);
-                if (j == null) {
-                    return;
-                }
-                JSONArray array = j.optJSONArray("result");
-                if (array == null) return;
-                List<TopInfo> infoList = new ArrayList<>();
-                for (int i = 0; i < array.length(); i++) {
-                    TopInfo info = TopInfo.fromJSON(array.optJSONObject(i));
-                    infoList.add(info);
-                }
-                mTopAdapter.setInfoList(infoList);
-                mTopAdapter.notifyDataSetChanged();
-            }
-        });
-        loadPage(1);
+    private void checkRefreshing() {
+        if (!isLoadingActivity && !isLoadingTopActivity) {
+            isRefreshing = false;
+            mSwipeLayout.setRefreshing(false);
+        }
     }
 
-    private void loadPage(int p) {
-        isLoading = true;
+    private void loadTopActivity() {
+        isRefreshing = true;
+        isLoadingTopActivity = true;
         Services.activityService()
-                .getActivityInfo(new ActivityService.GetActivityInfo(StrUtils.token(), String.valueOf(p)))
+                .getTopActivity(new ActivityService.GetTopActivity(StrUtils.token()))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(resp -> {
+                    Log.d(TAG, "getTopActivity: " + resp.toString());
+                    isLoadingTopActivity = false;
+                    checkRefreshing();
+                    if ("successful".equals(resp.getState())) {
+                        mTopActivityListAdapter.setTopActivityList(resp.getResult());
+                        mTopActivityListAdapter.notifyDataSetChanged();
+                    } else {
+                        Toast.makeText(getActivity(),
+                                resp.getReason(),
+                                Toast.LENGTH_SHORT)
+                                .show();
+                    }
+                }, ex -> {
+                    Log.e(TAG, "getTopActivity: " + ex.getMessage());
+                    isLoadingTopActivity = false;
+                    checkRefreshing();
+                    Toast.makeText(getActivity(),
+                            R.string.network_error,
+                            Toast.LENGTH_SHORT)
+                            .show();
+                });
+    }
+
+    private void loadActivity() {
+        morePages = true;
+        isLoadingActivity = true;
+        isRefreshing = true;
+        Services.activityService()
+                .getActivityInfo(new ActivityService.GetActivityInfo(StrUtils.token(),
+                        String.valueOf(pageNumber + 1)))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(resp -> {
                     Log.d(TAG, "getActivityInfo: " + resp.toString());
-                    int page = resp.getPages();
-                    if (page != this.page) {
-                        this.page = page;
+                    isLoadingActivity = false;
+                    checkRefreshing();
+                    if ("successful".equals(resp.getState())) {
+                        pageNumber = resp.getPages();
+                        List<Activity> activities = resp.getResult();
+                        if (activities == null || activities.isEmpty()) {
+                            morePages = false;
+                            return;
+                        }
+                        mActivityListAdapter.setActivityList(activities);
+                        mActivityListAdapter.notifyDataSetChanged();
+                    } else {
+                        Toast.makeText(getActivity(),
+                                resp.getReason(),
+                                Toast.LENGTH_SHORT)
+                                .show();
                     }
-                    List<Activity> activities = resp.getResult();
-                    if (activities == null || activities.isEmpty()) {
-                        canLoadMore = false;
-                        return;
-                    }
-                    mRvAdapter.setActivityList(activities);
-                    mRvAdapter.notifyDataSetChanged();
-                    isRefreshing = false;
-                    isLoading = false;
-                    mSwipeLayout.setRefreshing(false);
                 }, ex -> {
-                    isRefreshing = false;
-                    isLoading = false;
                     Log.e(TAG, "getActivityInfo: " + ex.getMessage());
+                    isLoadingActivity = false;
+                    checkRefreshing();
                     Toast.makeText(getActivity(),
                             R.string.network_error,
-                            Toast.LENGTH_SHORT).show();
+                            Toast.LENGTH_SHORT)
+                            .show();
                 });
     }
 
@@ -185,15 +203,12 @@ public class FgtActivity extends BaseFragment {
         return TAG;
     }
 
-    class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    class ActivityListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         static final int TYPE_TOP = 1;
         static final int TYPE_ACTIVITY = 2;
         List<Activity> mActivityList;
 
-        public Adapter() {
-        }
-
-        public void setActivityList(List<Activity> activityList) {
+        void setActivityList(List<Activity> activityList) {
             this.mActivityList = activityList;
         }
 
@@ -217,7 +232,7 @@ public class FgtActivity extends BaseFragment {
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             if (holder instanceof TopViewHolder) {
                 TopViewHolder top = (TopViewHolder) holder;
-                top.mViewPager.setAdapter(mTopAdapter);
+                top.mViewPager.setAdapter(mTopActivityListAdapter);
                 top.mIndicator.setViewPager(top.mViewPager);
             } else {
                 Activity activity = mActivityList.get(position - 1);
@@ -254,28 +269,45 @@ public class FgtActivity extends BaseFragment {
         }
 
         class TopViewHolder extends RecyclerView.ViewHolder {
+
+            @BindView(R.id.top_pager_view)
             ViewPager mViewPager;
+
+            @BindView(R.id.top_pager_indicator)
             PageIndicator mIndicator;
 
-            public TopViewHolder(View itemView) {
+            TopViewHolder(View itemView) {
                 super(itemView);
-                mViewPager = (ViewPager) itemView.findViewById(R.id.top_pager_view);
-                mIndicator = (PageIndicator) itemView.findViewById(R.id.top_pager_indicator);
+                ButterKnife.bind(this, itemView);
             }
         }
 
         class ItemViewHolder extends RecyclerView.ViewHolder {
+
+            @BindView(R.id.fgt_activity_item_image)
             SimpleDraweeView mAvatar;
+
+            @BindView(R.id.fgt_activity_item_title)
             TextView mTvTitle;
+
+            @BindView(R.id.fgt_activity_item_count)
             TextView mTvCount;
+
+            @BindView(R.id.fgt_activity_item_time)
             TextView mTvTime;
+
+            @BindView(R.id.fgt_activity_item_location)
             TextView mTvLocation;
+
+            @BindView(R.id.fgt_activity_item_time_state)
             TextView mTimeState;
+
+            @BindView(R.id.fgt_activity_item_top_image)
             ImageView mTopImage;
 
-
-            public ItemViewHolder(View itemView) {
+            ItemViewHolder(View itemView) {
                 super(itemView);
+                ButterKnife.bind(this, itemView);
                 itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
@@ -285,44 +317,20 @@ public class FgtActivity extends BaseFragment {
                         startActivity(detail);
                     }
                 });
-                mAvatar = (SimpleDraweeView) itemView.findViewById(R.id.fgt_activity_item_image);
                 RoundingParams roundingParams = RoundingParams.fromCornersRadius(5f);
                 roundingParams.setRoundAsCircle(true);
                 mAvatar.getHierarchy().setRoundingParams(roundingParams);
-                mTvTitle = (TextView) itemView.findViewById(R.id.fgt_activity_item_title);
-                mTvCount = (TextView) itemView.findViewById(R.id.fgt_activity_item_count);
-                mTvTime = (TextView) itemView.findViewById(R.id.fgt_activity_item_time);
-                mTvLocation = (TextView) itemView.findViewById(R.id.fgt_activity_item_location);
-                mTimeState = (TextView) itemView.findViewById(R.id.fgt_activity_item_time_state);
-                mTopImage = (ImageView) itemView.findViewById(R.id.fgt_activity_item_top_image);
                 mTopImage.setRotation(45);
             }
         }
     }
 
-    private static class TopInfo {
-        public int id;
-        public String url;
-
-        public static TopInfo fromJSON(JSONObject j) {
-            TopInfo info = new TopInfo();
-            info.id = j.optInt("activityid");
-            info.url = j.optString("imageurl");
-            return info;
-        }
-    }
-
-    private static class TopAdapter extends PagerAdapter {
-        List<TopInfo> infoList;
-        Context context;
+    class TopActivityListAdapter extends PagerAdapter {
+        List<TopActivity> topActivityList;
         View.OnClickListener mListener;
 
-        public TopAdapter(Context context) {
-            this.context = context;
-        }
-
-        public void setInfoList(List<TopInfo> infoList) {
-            this.infoList = infoList;
+        void setTopActivityList(List<TopActivity> topActivityList) {
+            this.topActivityList = topActivityList;
         }
 
         public void setListener(View.OnClickListener listener) {
@@ -331,7 +339,7 @@ public class FgtActivity extends BaseFragment {
 
         @Override
         public int getCount() {
-            return infoList == null ? 0 : infoList.size();
+            return topActivityList == null ? 0 : topActivityList.size();
         }
 
         @Override
@@ -341,10 +349,10 @@ public class FgtActivity extends BaseFragment {
 
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
-            SimpleDraweeView image = new SimpleDraweeView(context);
-            Uri uri = Uri.parse(infoList.get(position).url);
+            SimpleDraweeView image = new SimpleDraweeView(getActivity());
+            Uri uri = Uri.parse(topActivityList.get(position).getUrl());
             image.setImageURI(uri);
-            image.setTag(infoList.get(position).id);
+            image.setTag(topActivityList.get(position).getId());
             image.setOnClickListener(mListener);
             container.addView(image);
             return image;
@@ -355,6 +363,4 @@ public class FgtActivity extends BaseFragment {
             container.removeView((View) object);
         }
     }
-
-
 }
