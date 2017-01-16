@@ -3,6 +3,8 @@ package space.weme.remix.ui.activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.AppBarLayout;
+import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.v4.util.ArrayMap;
 import android.util.Log;
 import android.view.View;
@@ -73,8 +75,13 @@ public class ActivityDetailActivity extends SwipeActivity {
     // 活动评论
     @BindView(R.id.comment_text_view)
     TextView mActivityCommentTextView;
-    @BindView(R.id.main_title)
-    TextView mainTitle;
+
+    @BindView(R.id.collapsing_toolbar)
+    CollapsingToolbarLayout collapsingToolbar;
+
+    @BindView(R.id.appbar)
+    AppBarLayout appbar;
+
     private int activityid;
     private ArrayList<String> path;
     private ActivityDetail mActivityDetail;
@@ -163,14 +170,27 @@ public class ActivityDetailActivity extends SwipeActivity {
         startActivity(intent);
     }
 
+    void setupMenu() {
+        collapsingToolbar.setExpandedTitleColor(getResources().getColor(R.color.white));
+        collapsingToolbar.setCollapsedTitleTextColor(getResources().getColor(R.color.white));
+        appbar.addOnOffsetChangedListener(new CollapsingToolbarTitleOnlyCollapsed(collapsingToolbar, () -> {
+            if (mActivityDetail != null) {
+                return mActivityDetail.getTitle();
+            } else {
+                return getResources().getString(R.string.activity_detail);
+            }
+        }));
+    }
+
     void setupViews() {
+        setupMenu();
         btnSign.setBackgroundResource(R.drawable.bg_login_btn_pressed);
         btnLove.setBackgroundResource(R.drawable.bg_login_btn_pressed);
         ViewGroup.LayoutParams params = avatar.getLayoutParams();
         params.height = DimensionUtils.getDisplay().widthPixels / 2;
         avatar.setLayoutParams(params);
-        mainTitle.setText(R.string.activity_detail);
     }
+
 
     void updateView(ActivityDetail activityDetail) {
         mActivityDetail = activityDetail;
@@ -178,8 +198,6 @@ public class ActivityDetailActivity extends SwipeActivity {
         roundingParams.setRoundAsCircle(true);
         atyAvatar.getHierarchy().setRoundingParams(roundingParams);
         atyAvatar.setImageURI(Uri.parse(StrUtils.thumForID(mActivityDetail.getAuthorid() + "")));
-
-        mainTitle.setText(mActivityDetail.getTitle());
         txtTime.setText(mActivityDetail.getTime());
         txtDetail.setText(mActivityDetail.getDetail());
         txtAuthor.setText(mActivityDetail.getAuthor());
@@ -187,20 +205,16 @@ public class ActivityDetailActivity extends SwipeActivity {
         txtRemark.setText(mActivityDetail.getRemark());
         txtSchool.setText(mActivityDetail.getSchool());
         txtLocation.setText(mActivityDetail.getLocation());
-        if ("no".equals(mActivityDetail.getState())) {
-            btnSign.setText("我要报名");
-            btnSign.setBackgroundResource(R.drawable.bg_login_btn_pressed);
-        } else {
-            btnSign.setText("已报名");
-            btnSign.setBackgroundResource(R.drawable.bg_login_btn_common);
-        }
-        if ("0".equals(mActivityDetail.getFlag())) {
-            btnLove.setText("关注一下");
-            btnLove.setBackgroundResource(R.drawable.bg_login_btn_pressed);
-        } else {
-            btnLove.setText("已关注");
-            btnLove.setBackgroundResource(R.drawable.bg_login_btn_common);
-        }
+
+        boolean signed = !"no".equals(mActivityDetail.getState());
+
+        btnSign.setText(signed ? "已报名" : "我要报名");
+        btnSign.setBackgroundResource(signed ? R.drawable.bg_login_btn_common : R.drawable.bg_login_btn_pressed);
+
+        boolean liked = !"0".equals(mActivityDetail.getFlag());
+        btnLove.setText(liked ? "已关注" : "关注一下");
+        btnLove.setBackgroundResource(liked ? R.drawable.bg_login_btn_common : R.drawable.bg_login_btn_pressed);
+
         avatar.setImageURI(Uri.parse(mActivityDetail.getImageurl()));
         tvSlogan.setText(mActivityDetail.getAdvertise());
     }

@@ -2,69 +2,55 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/whole_layout"
-    android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
     <android.support.v7.widget.Toolbar
-        android:background="@color/colorPrimary"
         android:id="@+id/toolbar_main"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize">
-        <TextView
-            android:id="@+id/main_title"
-            android:textSize="18sp"
-            android:layout_gravity="center"
-            android:textColor="@color/white"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-        <ImageView
-            android:layout_gravity="end"
-            android:src="@mipmap/more"
-            android:id="@+id/more_action"
-            android:padding="16dp"
-            android:layout_width="56dp"
-            android:layout_height="56dp" />
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/colorPrimary">
     </android.support.v7.widget.Toolbar>
     <android.support.v4.view.ViewPager
         android:id="@+id/main_pager"
         android:layout_width="match_parent"
-        android:layout_weight="1"
-        android:layout_height="0dp"/>
+        android:layout_height="0dp"
+        android:layout_weight="1" />
     <View
-        android:background="@color/colorGray"
         android:layout_width="match_parent"
-        android:layout_height="1dp"/>
+        android:layout_height="1dp"
+        android:background="@color/colorGray" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="40dp">
         <space.weme.remix.widgt.TabItem
-            app:image="@mipmap/main_tab_item_activity"
-            app:text="@string/activity"
             android:id="@+id/main_item_activity"
             android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
-            android:layout_height="match_parent"/>
+            app:image="@mipmap/main_tab_item_activity"
+            app:text="@string/activity" />
         <space.weme.remix.widgt.TabItem
-            app:image="@mipmap/main_tab_item_social"
-            app:text="@string/community"
             android:id="@+id/main_item_community"
             android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
-            android:layout_height="match_parent"/>
+            app:image="@mipmap/main_tab_item_social"
+            app:text="@string/community" />
         <space.weme.remix.widgt.TabItem
-            app:image="@mipmap/discover"
-            app:text="@string/find"
             android:id="@+id/main_item_find"
             android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
-            android:layout_height="match_parent"/>
+            app:image="@mipmap/discover"
+            app:text="@string/find" />
         <space.weme.remix.widgt.TabItem
-            app:image="@mipmap/main_tab_item_me"
-            app:text="@string/me"
             android:id="@+id/main_item_me"
             android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
-            android:layout_height="match_parent"/>
+            app:image="@mipmap/main_tab_item_me"
+            app:text="@string/me" />
     </LinearLayout>
 </LinearLayout>

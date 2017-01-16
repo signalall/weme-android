@@ -1,32 +1,25 @@
 package space.weme.remix.ui.main;
 
-import android.app.Dialog;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.view.Gravity;
-import android.view.LayoutInflater;
-import android.view.View;
+import android.support.v7.widget.Toolbar;
 import android.view.ViewGroup;
-import android.view.WindowManager;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.BindViews;
 import butterknife.ButterKnife;
-import butterknife.OnClick;
 import space.weme.remix.R;
 import space.weme.remix.ui.activity.PublishActivityActivity;
 import space.weme.remix.ui.activity.SearchActivityActivity;
 import space.weme.remix.ui.base.BaseActivity;
 import space.weme.remix.ui.intro.AtyLogin;
-import space.weme.remix.util.DimensionUtils;
 import space.weme.remix.util.UpdateUtils;
 import space.weme.remix.widgt.TabItem;
 
@@ -40,20 +33,23 @@ public class MainActivity extends BaseActivity {
     public static final String INTENT_UPDATE = "intent_update";
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int PAGE_COUNT = 4;
+
     @BindViews({R.id.main_item_activity,
             R.id.main_item_community,
             R.id.main_item_find,
             R.id.main_item_me
     })
     List<TabItem> mTabItems;
+
     @BindView(R.id.main_pager)
     ViewPager mViewPager;
-    @BindView(R.id.main_title)
-    TextView mTitleTExtView;
-    @BindView(R.id.more_action)
-    ImageView mMoreImageView;
+
     @BindView(R.id.whole_layout)
     ViewGroup mViewGroup;
+
+    @BindView(R.id.toolbar_main)
+    Toolbar toolbar;
+
     private int[] mTitleTexts = new int[]{
             R.string.activity,
             R.string.community,
@@ -73,6 +69,7 @@ public class MainActivity extends BaseActivity {
         if (getIntent().getBooleanExtra(INTENT_UPDATE, false)) {
             UpdateUtils.checkUpdate(MainActivity.this);
         }
+
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         setupViews();
@@ -83,34 +80,38 @@ public class MainActivity extends BaseActivity {
         return TAG;
     }
 
-    @OnClick(R.id.more_action)
-    public void onMoreClick() {
-        Dialog dialog = new Dialog(MainActivity.this, R.style.DialogMain);
-        View content = LayoutInflater.from(MainActivity.this).inflate(R.layout.main_menu, mViewGroup, false);
-        content.findViewById(R.id.action_search).setOnClickListener(v -> {
-            Intent search = new Intent(MainActivity.this, SearchActivityActivity.class);
-            startActivity(search);
-            dialog.dismiss();
-        });
-        content.findViewById(R.id.action_publish).setOnClickListener(v -> {
-            Intent publicActivity = new Intent(MainActivity.this, PublishActivityActivity.class);
-            startActivity(publicActivity);
-            dialog.dismiss();
-        });
-        content.findViewById(R.id.action_qrcode).setOnClickListener(v -> dialog.dismiss());
-        dialog.setContentView(content);
-        WindowManager.LayoutParams params = dialog.getWindow().getAttributes();
-        params.gravity = Gravity.TOP | Gravity.END;
-        params.x = DimensionUtils.dp2px(20);   //x position
-        params.y = DimensionUtils.dp2px(56) + DimensionUtils.getStatusBarHeight();   //y position
-        params.width = DimensionUtils.dp2px(160);
-        params.height = DimensionUtils.dp2px(123);
-        dialog.show();
+    private void setupMenu(int index) {
+        if (index == 0) {
+            if (toolbar.getMenu() != null)
+                toolbar.getMenu().clear();
+            toolbar.inflateMenu(R.menu.menu_activity_fragment);
+            toolbar.setOnMenuItemClickListener(item -> {
+                if (item.getItemId() == R.id.action_search) {
+                    Intent search = new Intent(MainActivity.this, SearchActivityActivity.class);
+                    startActivity(search);
+                    return true;
+                } else if (item.getItemId() == R.id.action_publish) {
+                    Intent publicActivity = new Intent(MainActivity.this, PublishActivityActivity.class);
+                    startActivity(publicActivity);
+                    return true;
+                } else if (item.getItemId() == R.id.action_qrcode) {
+                    return true;
+                }
+                return false;
+            });
+        } else {
+            if (toolbar.getMenu() != null)
+                toolbar.getMenu().clear();
+            toolbar.inflateMenu(R.menu.menu_empty);
+        }
+        toolbar.setTitleTextColor(getResources().getColor(R.color.white));
+        toolbar.setTitle(mTitleTexts[index]);
     }
 
     private void setupViews() {
         mTabItems.get(0).setEnable(true);
-        mTitleTExtView.setText(R.string.activity);
+        setupMenu(0);
+
         TabPagerAdapter mTabPagerAdapter = new TabPagerAdapter(getFragmentManager());
         mViewPager.setAdapter(mTabPagerAdapter);
         mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
@@ -120,31 +121,22 @@ public class MainActivity extends BaseActivity {
 
             @Override
             public void onPageSelected(int position) {
-                mTitleTExtView.setText(mTitleTexts[position]);
                 for (int i = 0; i < PAGE_COUNT; i++) {
                     mTabItems.get(i).setEnable(i == position);
                 }
-                if (position == 0)
-                    mMoreImageView.setVisibility(View.VISIBLE);
-                else {
-                    mMoreImageView.setVisibility(View.GONE);
-                }
+                setupMenu(position);
             }
 
             @Override
             public void onPageScrollStateChanged(int state) {
             }
         });
-        View.OnClickListener mTabItemClickListener = new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                int p = (int) v.getTag();
-                mViewPager.setCurrentItem(p);
-            }
-        };
         for (int i = 0; i < PAGE_COUNT; i++) {
             mTabItems.get(i).setTag(i);
-            mTabItems.get(i).setOnClickListener(mTabItemClickListener);
+            mTabItems.get(i).setOnClickListener(v -> {
+                int p = (int) v.getTag();
+                mViewPager.setCurrentItem(p);
+            });
         }
     }
 
