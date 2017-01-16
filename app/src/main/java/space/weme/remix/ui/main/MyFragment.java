@@ -161,6 +161,7 @@ public class MyFragment extends BaseFragment {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(resp -> {
+                    Log.d(TAG, "getUnreadMessage: " + resp.toString());
                     if (Constants.STATE_SUCCESSFUL.equals(resp.getState())) {
                         int number = Integer.parseInt(resp.getNumber());
                         if (number <= 0) {
@@ -169,10 +170,10 @@ public class MyFragment extends BaseFragment {
                         }
                         mUnreadMessageTextView.setVisibility(View.VISIBLE);
                         if (number < 10) {
-                            mUnreadMessageTextView.setText(number);
+                            mUnreadMessageTextView.setText(String.valueOf(number));
                             mUnreadMessageTextView.setTextSize(16);
                         } else if (number < 100) {
-                            mUnreadMessageTextView.setText(number);
+                            mUnreadMessageTextView.setText(String.valueOf(number));
                             mUnreadMessageTextView.setTextSize(14);
                         } else {
                             mUnreadMessageTextView.setTextSize(12);
