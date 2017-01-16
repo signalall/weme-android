@@ -39,7 +39,8 @@ public class Constants {
     public static final String PUBLISH_ACTIVITY = "publishactivity";
     public static final String UNLIKE_ACTIVITY = "unlikeactivity";
     public static final String GET_TOP_ACTIVITY_URL = "activitytopofficial";
-
+    public static final String GET_ACTIVITY_COMMENT_URL = "getactivitycomment";
+    public static final String COMMENT_TO_ACTIVITY_URL = "commenttoactivity";
 
     // Food
     public static final String GET_RECOMMEND_FOOD = "getfoodcard";

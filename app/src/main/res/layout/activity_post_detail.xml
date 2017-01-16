@@ -3,76 +3,86 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true">
+
     <FrameLayout
-        android:background="@color/colorPrimary"
         android:layout_width="match_parent"
-        android:layout_height="?actionBarSize">
+        android:layout_height="?actionBarSize"
+        android:background="@color/colorPrimary">
+
         <TextView
-            android:visibility="gone"
+            android:id="@+id/post_detail_delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|end"
             android:layout_marginEnd="16dp"
             android:layout_marginRight="16dp"
             android:gravity="center_vertical"
-            android:layout_gravity="center_vertical|end"
-            android:textSize="14sp"
             android:text="@string/delete"
             android:textColor="@color/white"
-            android:id="@+id/post_detail_delete"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:textSize="14sp"
+            android:visibility="gone" />
+
         <TextView
-            android:layout_marginStart="16dp"
-            android:layout_marginLeft="16dp"
-            android:gravity="center_vertical"
-            android:layout_gravity="center_vertical"
-            android:textSize="16sp"
-            android:textColor="@color/white"
             android:id="@+id/post_detail_toolbar"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginLeft="16dp"
+            android:layout_marginStart="16dp"
+            android:gravity="center_vertical"
+            android:textColor="@color/white"
+            android:textSize="16sp" />
     </FrameLayout>
+
     <android.support.v7.widget.RecyclerView
         android:id="@+id/post_detail_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginTop="?attr/actionBarSize" />
+
     <LinearLayout
-        android:visibility="gone"
-        android:background="@color/chat_bg_grey"
-        android:layout_gravity="bottom"
         android:id="@+id/chat_view_holder"
         android:layout_width="match_parent"
-        android:layout_height="40dp">
+        android:layout_height="40dp"
+        android:layout_gravity="bottom"
+        android:background="@color/white"
+        android:visibility="gone">
+
         <ImageView
-            android:src="@mipmap/expression"
             android:id="@+id/expression"
-            android:layout_margin="8dp"
             android:layout_width="24dp"
-            android:layout_height="24dp" />
+            android:layout_height="24dp"
+            android:layout_margin="8dp"
+            android:src="@mipmap/expression" />
+
         <ImageView
-            android:src="@mipmap/photo"
             android:id="@+id/activity_post_add_image"
-            android:layout_margin="8dp"
             android:layout_width="24dp"
-            android:layout_height="24dp" />
+            android:layout_height="24dp"
+            android:layout_margin="8dp"
+            android:src="@mipmap/photo" />
+
         <EditText
             android:id="@+id/activity_post_editor"
-            android:layout_margin="4dp"
-            android:background="@drawable/bg_chat_view"
-            android:paddingLeft="4dp"
-            android:paddingStart="4dp"
-            android:paddingEnd="4dp"
-            android:paddingRight="4dp"
-            android:layout_weight="1"
             android:layout_width="0dp"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:layout_margin="4dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_chat_view"
+            android:paddingEnd="4dp"
+            android:paddingLeft="4dp"
+            android:paddingRight="4dp"
+            android:paddingStart="4dp" />
+
         <TextView
             android:id="@+id/activity_post_commit"
-            android:textColor="@color/white"
-            android:layout_margin="10dp"
-            android:textSize="14sp"
-            android:text="发送"
-            android:layout_gravity="center_vertical"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:layout_gravity="center_vertical"
+            android:layout_margin="10dp"
+            android:background="@drawable/bg_send_btn"
+            android:text="发送"
+            android:textColor="@color/white"
+            android:textSize="14sp" />
     </LinearLayout>
 </FrameLayout>

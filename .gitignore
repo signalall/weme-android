@@ -34,3 +34,4 @@ captures/
 # OSX system file
 .DS_Store
 .idea/
+*.iml

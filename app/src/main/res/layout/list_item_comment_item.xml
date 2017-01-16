@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#fafafa"
+    android:paddingBottom="4dp"
+    android:paddingLeft="16dp"
+    android:paddingRight="16dp"
+    android:paddingTop="4dp">
+
+    <com.facebook.drawee.view.SimpleDraweeView
+        android:id="@+id/comment_avatar"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginRight="16dp"
+        app:placeholderImage="@mipmap/default_avatar"
+        app:roundAsCircle="true" />
+
+    <TextView
+        android:id="@+id/comment_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@+id/comment_avatar"
+        android:layout_toRightOf="@+id/comment_avatar"
+        android:textColor="@color/black"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/comment_school"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/comment_name"
+        android:layout_toEndOf="@+id/comment_avatar"
+        android:layout_toRightOf="@+id/comment_avatar"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/comment_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/comment_name"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/comment_content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/comment_time"
+        android:layout_marginBottom="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_toEndOf="@id/comment_avatar"
+        android:layout_toRightOf="@id/comment_avatar"
+        android:textColor="@color/black"
+        android:textSize="12sp" />
+
+    <space.weme.remix.widgt.GridLayout
+        android:id="@+id/comment_image"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/comment_content"
+        android:layout_marginTop="4dp"
+        android:layout_toEndOf="@id/comment_avatar"
+        android:layout_toRightOf="@id/comment_avatar" />
+
+    <LinearLayout
+        android:id="@+id/comment_to_comment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/comment_image"
+        android:layout_marginTop="4dp"
+        android:layout_toEndOf="@id/activity_avatar"
+        android:layout_toRightOf="@id/activity_avatar"
+        android:background="@color/grey_gap"
+        android:orientation="vertical"
+        android:padding="4dp">
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/dummy"
+        android:layout_width="wrap_content"
+        android:layout_height="24dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/comment_to_comment"
+        android:gravity="end"
+        android:orientation="horizontal"
+        android:padding="4dp">
+
+        <ImageView
+            android:id="@+id/comment_like_image_view"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginLeft="4dp"
+            android:layout_marginStart="4dp"
+            android:src="@mipmap/like_on" />
+
+        <TextView
+            android:id="@+id/comment_like_count"
+            android:layout_width="wrap_content"
+            android:layout_height="16dp"
+            android:gravity="center"
+            android:paddingEnd="4dp"
+            android:paddingRight="4dp"
+            android:textSize="12sp" />
+
+        <ImageView
+            android:id="@+id/comment_comment_image_view"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginLeft="4dp"
+            android:layout_marginStart="4dp"
+            android:src="@mipmap/reply" />
+
+        <TextView
+            android:id="@+id/comment_comment_count"
+            android:layout_width="wrap_content"
+            android:layout_height="16dp"
+            android:gravity="center"
+            android:paddingEnd="4dp"
+            android:paddingRight="4dp"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_below="@id/dummy"
+        android:layout_marginTop="4dp"
+        android:background="@color/grey_gap" />
+</RelativeLayout>

@@ -31,8 +31,8 @@ import space.weme.remix.model.Topic;
 import space.weme.remix.service.Services;
 import space.weme.remix.service.TopicService;
 import space.weme.remix.ui.base.BaseFragment;
-import space.weme.remix.ui.community.AtyPost;
-import space.weme.remix.ui.community.AtyTopic;
+import space.weme.remix.ui.community.PostDetailActivity;
+import space.weme.remix.ui.community.PostListActivity;
 import space.weme.remix.util.DimensionUtils;
 import space.weme.remix.util.StrUtils;
 import space.weme.remix.widgt.PageIndicator;
@@ -83,9 +83,9 @@ public class CommunityFragment extends BaseFragment {
             @Override
             public void onClick(View v) {
                 int id = (int) v.getTag();
-                Intent i = new Intent(getActivity(), AtyPost.class);
-                i.putExtra(AtyPost.POST_INTENT, id + "");
-                i.putExtra(AtyPost.THEME_INTENT, "");
+                Intent i = new Intent(getActivity(), PostDetailActivity.class);
+                i.putExtra(PostDetailActivity.POST_INTENT, id + "");
+                i.putExtra(PostDetailActivity.THEME_INTENT, "");
                 startActivity(i);
             }
         });
@@ -93,8 +93,8 @@ public class CommunityFragment extends BaseFragment {
         mClickListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = new Intent(getActivity(), AtyTopic.class);
-                i.putExtra(AtyTopic.TOPIC_ID, (String) v.getTag());
+                Intent i = new Intent(getActivity(), PostListActivity.class);
+                i.putExtra(PostListActivity.TOPIC_ID, (String) v.getTag());
                 startActivity(i);
             }
         };
@@ -119,6 +119,12 @@ public class CommunityFragment extends BaseFragment {
         return TAG;
     }
 
+    private void showNetworkError() {
+        Toast.makeText(getActivity(),
+                R.string.network_error,
+                Toast.LENGTH_SHORT).show();
+    }
+
     private void loadTopTopicList() {
         Subscription sub = Services.topicService()
                 .getTopTopicList(new TopicService.GetTopTopicList(StrUtils.token()))
@@ -139,9 +145,7 @@ public class CommunityFragment extends BaseFragment {
                     }
                 }, ex -> {
                     isRefreshing = false;
-                    Toast.makeText(getActivity(),
-                            R.string.network_error,
-                            Toast.LENGTH_SHORT).show();
+                    showNetworkError();
                 });
         subscriptions.add(sub);
     }
@@ -166,9 +170,7 @@ public class CommunityFragment extends BaseFragment {
                 }, ex -> {
                     Log.e(TAG, "getTopicList: " + ex.toString());
                     isRefreshing = false;
-                    Toast.makeText(getActivity(),
-                            R.string.network_error,
-                            Toast.LENGTH_SHORT).show();
+                    showNetworkError();
                 });
         subscriptions.add(sub);
     }

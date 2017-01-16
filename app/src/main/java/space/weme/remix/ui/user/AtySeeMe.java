@@ -2,6 +2,7 @@ package space.weme.remix.ui.user;
 
 import android.os.Bundle;
 import android.support.v4.util.ArrayMap;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -53,6 +54,7 @@ public class AtySeeMe extends SwipeActivity {
         adapter = new FriendAdapter(this);
         mRecycler.setLayoutManager(new LinearLayoutManager(this));
         mRecycler.setHasFixedSize(true);
+        mRecycler.setItemAnimator(new DefaultItemAnimator());
         mRecycler.setAdapter(adapter);
         mRecycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -75,11 +77,11 @@ public class AtySeeMe extends SwipeActivity {
         getFollowers(1);
     }
 
-    private void getFollowers(final int page){
+    private void getFollowers(final int page) {
         isLoading = true;
         ArrayMap<String, String> param = new ArrayMap<>();
         param.put("token", StrUtils.token());
-        param.put("page",String.format("%d", page));
+        param.put("page", String.format("%d", page));
         param.put("direction", "followers");
         OkHttpUtils.post(StrUtils.GET_FOLLOWERS_URL, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
             @Override
@@ -94,7 +96,7 @@ public class AtySeeMe extends SwipeActivity {
                 JSONArray result = j.optJSONArray("result");
                 int previousCount = friendDataList.size();
                 int count = result.length();
-                if(count == 0){
+                if (count == 0) {
                     canLoadMore = false;
                     return;
                 }

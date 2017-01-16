@@ -7,6 +7,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -31,7 +32,7 @@ import space.weme.remix.model.Activity;
 import space.weme.remix.model.TopActivity;
 import space.weme.remix.service.ActivityService;
 import space.weme.remix.service.Services;
-import space.weme.remix.ui.aty.AtyActivityDetail;
+import space.weme.remix.ui.activity.ActivityDetailActivity;
 import space.weme.remix.ui.base.BaseFragment;
 import space.weme.remix.util.DimensionUtils;
 import space.weme.remix.util.LogUtils;
@@ -44,13 +45,13 @@ import space.weme.remix.widgt.PageIndicator;
  */
 public class ActivityFragment extends BaseFragment {
 
-    private static final String TAG = "ActivityFragment";
+    private static final String TAG = ActivityFragment.class.getSimpleName();
 
     // views
-    @BindView(R.id.fgt_activity_swipe_layout)
+    @BindView(R.id.activity_list_swipe_refresh_layout)
     SwipeRefreshLayout mSwipeLayout;
 
-    @BindView(R.id.fgt_activity_recycler_view)
+    @BindView(R.id.activity_list_recycler_view)
     RecyclerView mActivityListRecyclerView;
 
     private TopActivityListAdapter mTopActivityListAdapter;
@@ -88,6 +89,7 @@ public class ActivityFragment extends BaseFragment {
             }
         });
         mActivityListRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        mActivityListRecyclerView.setItemAnimator(new DefaultItemAnimator());
         mActivityListRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
@@ -106,7 +108,7 @@ public class ActivityFragment extends BaseFragment {
             @Override
             public void onClick(View v) {
                 int id = (int) v.getTag();
-                Intent intent = new Intent(getActivity(), AtyActivityDetail.class);
+                Intent intent = new Intent(getActivity(), ActivityDetailActivity.class);
                 intent.putExtra("activityid", id);
                 startActivity(intent);
             }
@@ -222,7 +224,7 @@ public class ActivityFragment extends BaseFragment {
                 v.setLayoutParams(params);
                 vh = new TopViewHolder(v);
             } else {
-                View v = LayoutInflater.from(getActivity()).inflate(R.layout.fgt_activity_item, parent, false);
+                View v = LayoutInflater.from(getActivity()).inflate(R.layout.list_item_activity_item, parent, false);
                 vh = new ItemViewHolder(v);
             }
             return vh;
@@ -311,8 +313,8 @@ public class ActivityFragment extends BaseFragment {
                 itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        Intent detail = new Intent(getActivity(), AtyActivityDetail.class);
-                        detail.putExtra(AtyActivityDetail.INTENT, mActivityList.get(getAdapterPosition() - 1).getId());
+                        Intent detail = new Intent(getActivity(), ActivityDetailActivity.class);
+                        detail.putExtra(ActivityDetailActivity.INTENT, mActivityList.get(getAdapterPosition() - 1).getId());
                         LogUtils.d(TAG, "id:" + mActivityList.get(getAdapterPosition() - 1).getId());
                         startActivity(detail);
                     }

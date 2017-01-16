@@ -5,10 +5,7 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 import rx.Observable
 import space.weme.remix.Constants
-import space.weme.remix.model.Activity
-import space.weme.remix.model.AtyDetail
-import space.weme.remix.model.ResponseWrapper
-import space.weme.remix.model.TopActivity
+import space.weme.remix.model.*
 
 /**
  * Created by Joyce on 2017/1/3.
@@ -81,7 +78,7 @@ interface ActivityService {
     @POST(Constants.GET_ACTIVITY_DETAIL_URL)
     fun getActivityDetail(
             @Body token: GetActivityDetail
-    ): Observable<ResponseWrapper<AtyDetail>>
+    ): Observable<ResponseWrapper<ActivityDetail>>
 
     data class PublishActivity(
             @SerializedName("token") val token: String,
@@ -157,4 +154,29 @@ interface ActivityService {
 
     @POST(Constants.GET_TOP_ACTIVITY_URL)
     fun getTopActivity(@Body body: GetTopActivity): Observable<ResponseWrapper<List<TopActivity>>>
+
+    data class GetActivityCommennt(
+            @SerializedName("token") val token: String,
+            @SerializedName("activityid") val activityid: String,
+            @SerializedName("endid") val pageSize: String
+    )
+
+    @POST(Constants.GET_ACTIVITY_COMMENT_URL)
+    fun getActivityComment(@Body body: GetActivityCommennt): Observable<ResponseWrapper<List<ActivityComment>>>
+
+    data class CommentToActivity(
+            @SerializedName("token") val token: String,
+            @SerializedName("activityid") val activityid: String,
+            @SerializedName("body") val body: String
+    )
+
+    data class CommentToActivityResp(
+            @SerializedName("id") val id: Int, // Activity id
+            @SerializedName("reason") val reason: String,
+            @SerializedName("state") val state: String,
+            @SerializedName("commentnumber") val commentNumber: String
+    )
+
+    @POST(Constants.COMMENT_TO_ACTIVITY_URL)
+    fun commentToActivity(@Body body: CommentToActivity): Observable<CommentToActivityResp>
 }

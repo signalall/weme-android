@@ -8,6 +8,7 @@ import android.support.design.widget.TabLayout;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.util.ArrayMap;
 import android.support.v4.view.ViewPager;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -67,31 +68,6 @@ public class AtyMessage extends BaseActivity {
         return TAG;
     }
 
-
-    private class MessagePagerAdapter extends FragmentPagerAdapter {
-
-        public MessagePagerAdapter(FragmentManager fm) {
-            super(fm);
-        }
-
-        @Override
-        public Fragment getItem(int position) {
-            if (position == 0) return FgtPrivateMessage.newInstance();
-            else return FgtSystemMessage.newInstance();
-        }
-
-        @Override
-        public int getCount() {
-            return 2;
-        }
-
-        @Override
-        public CharSequence getPageTitle(int position) {
-            if (position == 0) return getResources().getString(R.string.private_letter);
-            else return getResources().getString(R.string.comment);
-        }
-    }
-
     public static class FgtPrivateMessage extends BaseFragment {
         private List<Message> messageList;
         private MessageAdapter mAdapter;
@@ -110,6 +86,7 @@ public class AtyMessage extends BaseActivity {
             RecyclerView mRecycler = (RecyclerView) v.findViewById(R.id.aty_message_recycler);
             mRecycler.setLayoutManager(new LinearLayoutManager(getActivity()));
             mRecycler.setHasFixedSize(true);
+            mRecycler.setItemAnimator(new DefaultItemAnimator());
             messageList = new ArrayList<>();
             mAdapter = new MessageAdapter(getActivity());
             mRecycler.setAdapter(mAdapter);
@@ -165,7 +142,7 @@ public class AtyMessage extends BaseActivity {
             RecyclerView mRecycler = (RecyclerView) v.findViewById(R.id.aty_message_recycler);
             mRecycler.setLayoutManager(new LinearLayoutManager(getActivity()));
             mRecycler.setHasFixedSize(true);
-
+            mRecycler.setItemAnimator(new DefaultItemAnimator());
             messageList = new ArrayList<>();
             mAdapter = new SystemMessageAdapter(getActivity());
             mRecycler.setAdapter(mAdapter);
@@ -209,6 +186,30 @@ public class AtyMessage extends BaseActivity {
             });
         }
 
+    }
+
+    private class MessagePagerAdapter extends FragmentPagerAdapter {
+
+        public MessagePagerAdapter(FragmentManager fm) {
+            super(fm);
+        }
+
+        @Override
+        public Fragment getItem(int position) {
+            if (position == 0) return FgtPrivateMessage.newInstance();
+            else return FgtSystemMessage.newInstance();
+        }
+
+        @Override
+        public int getCount() {
+            return 2;
+        }
+
+        @Override
+        public CharSequence getPageTitle(int position) {
+            if (position == 0) return getResources().getString(R.string.private_letter);
+            else return getResources().getString(R.string.comment);
+        }
     }
 
 

@@ -22,8 +22,8 @@ import butterknife.BindViews;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import space.weme.remix.R;
-import space.weme.remix.ui.aty.AtyPublicActivity;
-import space.weme.remix.ui.aty.AtySearchActivity;
+import space.weme.remix.ui.activity.PublishActivityActivity;
+import space.weme.remix.ui.activity.SearchActivityActivity;
 import space.weme.remix.ui.base.BaseActivity;
 import space.weme.remix.ui.intro.AtyLogin;
 import space.weme.remix.util.DimensionUtils;
@@ -36,37 +36,30 @@ import space.weme.remix.widgt.TabItem;
  */
 public class MainActivity extends BaseActivity {
 
-    private static final String TAG = MainActivity.class.getSimpleName();
     public static final String INTENT_LOGOUT = "intent_lougout";
     public static final String INTENT_UPDATE = "intent_update";
-
+    private static final String TAG = MainActivity.class.getSimpleName();
     private static final int PAGE_COUNT = 4;
-
-    private int[] mTitleTexts = new int[]{
-            R.string.activity,
-            R.string.community,
-            R.string.find,
-            R.string.me
-    };
-
     @BindViews({R.id.main_item_activity,
             R.id.main_item_community,
             R.id.main_item_find,
             R.id.main_item_me
     })
     List<TabItem> mTabItems;
-
     @BindView(R.id.main_pager)
     ViewPager mViewPager;
-
     @BindView(R.id.main_title)
     TextView mTitleTExtView;
-
     @BindView(R.id.more_action)
     ImageView mMoreImageView;
-
     @BindView(R.id.whole_layout)
     ViewGroup mViewGroup;
+    private int[] mTitleTexts = new int[]{
+            R.string.activity,
+            R.string.community,
+            R.string.find,
+            R.string.me
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,12 +88,12 @@ public class MainActivity extends BaseActivity {
         Dialog dialog = new Dialog(MainActivity.this, R.style.DialogMain);
         View content = LayoutInflater.from(MainActivity.this).inflate(R.layout.main_menu, mViewGroup, false);
         content.findViewById(R.id.action_search).setOnClickListener(v -> {
-            Intent search = new Intent(MainActivity.this, AtySearchActivity.class);
+            Intent search = new Intent(MainActivity.this, SearchActivityActivity.class);
             startActivity(search);
             dialog.dismiss();
         });
         content.findViewById(R.id.action_publish).setOnClickListener(v -> {
-            Intent publicActivity = new Intent(MainActivity.this, AtyPublicActivity.class);
+            Intent publicActivity = new Intent(MainActivity.this, PublishActivityActivity.class);
             startActivity(publicActivity);
             dialog.dismiss();
         });

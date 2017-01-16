@@ -3,29 +3,29 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingTop="4dp"
+    android:paddingLeft="16dp"
     android:paddingRight="16dp"
-    android:paddingLeft="16dp">
+    android:paddingTop="4dp">
 
     <com.facebook.drawee.view.SimpleDraweeView
-        app:placeholderImage="@mipmap/default_avatar"
-        app:placeholderImageScaleType="fitCenter"
         android:id="@+id/aty_post_title_avatar"
         android:layout_width="32dp"
         android:layout_height="32dp"
         android:layout_marginEnd="16dp"
         android:layout_marginRight="16dp"
+        app:placeholderImage="@mipmap/default_avatar"
+        app:placeholderImageScaleType="fitCenter"
         app:roundAsCircle="true" />
 
     <TextView
-        android:textColor="@color/black"
         android:id="@+id/aty_post_title_user"
-        android:textStyle="bold"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toEndOf="@+id/aty_post_title_avatar"
         android:layout_toRightOf="@+id/aty_post_title_avatar"
-        android:textSize="14sp" />
+        android:textColor="@color/black"
+        android:textSize="14sp"
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/aty_post_title_university"
@@ -47,13 +47,13 @@
 
     <TextView
         android:id="@+id/aty_post_title_title"
-        android:textStyle="bold"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/aty_post_title_time"
         android:layout_marginTop="8dp"
         android:textColor="@color/black"
-        android:textSize="14sp" />
+        android:textSize="14sp"
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/aty_post_title_content"
@@ -67,48 +67,19 @@
 
     <space.weme.remix.widgt.GridLayout
         android:id="@+id/aty_post_title_image"
-        android:layout_below="@id/aty_post_title_content"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:layout_below="@id/aty_post_title_content" />
 
 
     <LinearLayout
-        android:id="@+id/aty_post_title_reply_layout"
+        android:id="@+id/dummy"
         android:layout_width="wrap_content"
         android:layout_height="24dp"
         android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
         android:layout_below="@id/aty_post_title_image"
-        android:orientation="horizontal"
-        android:padding="4dp">
-
-        <ImageView
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:layout_marginLeft="4dp"
-            android:layout_marginStart="4dp"
-            android:src="@mipmap/reply" />
-
-        <TextView
-            android:layout_gravity="center_vertical"
-            android:gravity="center"
-            android:id="@+id/aty_post_title_reply_number"
-            android:layout_width="wrap_content"
-            android:layout_height="16dp"
-            android:textSize="12sp"
-            android:paddingEnd="4dp"
-            android:paddingRight="4dp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/aty_post_title_like_layout"
-        android:layout_width="wrap_content"
-        android:layout_height="24dp"
-        android:layout_below="@id/aty_post_title_image"
-        android:layout_marginEnd="8dp"
-        android:layout_marginRight="8dp"
-        android:layout_toLeftOf="@id/aty_post_title_reply_layout"
-        android:layout_toStartOf="@id/aty_post_title_reply_layout"
+        android:gravity="end"
         android:orientation="horizontal"
         android:padding="4dp">
 
@@ -121,22 +92,40 @@
             android:src="@mipmap/like_on" />
 
         <TextView
-            android:layout_gravity="center_vertical"
-            android:gravity="center"
-            android:textSize="12sp"
             android:id="@+id/aty_post_title_like_number"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:gravity="center"
             android:paddingEnd="4dp"
-            android:paddingRight="4dp"/>
+            android:paddingRight="4dp"
+            android:textSize="12sp" />
+
+        <ImageView
+            android:id="@+id/aty_post_title_comment_post"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginLeft="4dp"
+            android:layout_marginStart="4dp"
+            android:src="@mipmap/reply" />
+
+        <TextView
+            android:id="@+id/aty_post_title_reply_number"
+            android:layout_width="wrap_content"
+            android:layout_height="16dp"
+            android:layout_gravity="center_vertical"
+            android:gravity="center"
+            android:paddingEnd="4dp"
+            android:paddingRight="4dp"
+            android:textSize="12sp" />
     </LinearLayout>
 
     <HorizontalScrollView
         android:id="@+id/aty_post_title_like_people_wrapper"
-        android:layout_marginTop="4dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/aty_post_title_like_layout">
+        android:layout_below="@id/dummy"
+        android:layout_marginTop="4dp">
 
         <LinearLayout
             android:id="@+id/aty_post_title_like_people"
@@ -146,9 +135,9 @@
     </HorizontalScrollView>
 
     <View
-        android:layout_marginTop="4dp"
-        android:layout_below="@id/aty_post_title_like_people_wrapper"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="@color/grey_gap"/>
+        android:layout_below="@id/aty_post_title_like_people_wrapper"
+        android:layout_marginTop="4dp"
+        android:background="@color/grey_gap" />
 </RelativeLayout>

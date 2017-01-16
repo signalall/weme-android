@@ -1,8 +1,9 @@
-package space.weme.remix.ui.aty;
+package space.weme.remix.ui.activity;
 
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
@@ -33,9 +34,9 @@ import space.weme.remix.ui.base.SwipeActivity;
 import space.weme.remix.util.LogUtils;
 import space.weme.remix.util.StrUtils;
 
-public class AtySearchActivity extends SwipeActivity {
+public class SearchActivityActivity extends SwipeActivity {
 
-    private static final String TAG = "AtySearchActivity";
+    private static final String TAG = SearchActivityActivity.class.getSimpleName();
 
     @BindView(R.id.edit_search)
     EditText editSearch;
@@ -58,9 +59,10 @@ public class AtySearchActivity extends SwipeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.aty_search_activity);
+        setContentView(R.layout.activity_search_activity);
         ButterKnife.bind(this);
-        recyclerSearch.setLayoutManager(new LinearLayoutManager(AtySearchActivity.this));
+        recyclerSearch.setItemAnimator(new DefaultItemAnimator());
+        recyclerSearch.setLayoutManager(new LinearLayoutManager(SearchActivityActivity.this));
         editSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -99,6 +101,10 @@ public class AtySearchActivity extends SwipeActivity {
                 });
     }
 
+    protected String tag() {
+        return TAG;
+    }
+
     class searchAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         List<Activity> mList;
@@ -110,7 +116,7 @@ public class AtySearchActivity extends SwipeActivity {
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             RecyclerView.ViewHolder vh;
-            View v = LayoutInflater.from(AtySearchActivity.this).inflate(R.layout.fgt_activity_item, parent, false);
+            View v = LayoutInflater.from(SearchActivityActivity.this).inflate(R.layout.list_item_activity_item, parent, false);
             vh = new ViewHolder(v);
             return vh;
         }
@@ -154,7 +160,7 @@ public class AtySearchActivity extends SwipeActivity {
                 itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        Intent detail = new Intent(AtySearchActivity.this, AtyActivityDetail.class);
+                        Intent detail = new Intent(SearchActivityActivity.this, ActivityDetailActivity.class);
                         detail.putExtra("activityid", mList.get(getAdapterPosition()).getId());
                         LogUtils.e(TAG, "id:" + mList.get(getAdapterPosition()).getId());
                         startActivity(detail);
@@ -168,9 +174,5 @@ public class AtySearchActivity extends SwipeActivity {
                 mAvatar.getHierarchy().setRoundingParams(roundingParams);
             }
         }
-    }
-
-    protected String tag() {
-        return TAG;
     }
 }

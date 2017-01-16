@@ -13,6 +13,7 @@ import android.support.v4.util.ArrayMap;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -55,7 +56,7 @@ import space.weme.remix.service.Services;
 import space.weme.remix.service.UserService;
 import space.weme.remix.ui.AtyImage;
 import space.weme.remix.ui.base.BaseActivity;
-import space.weme.remix.ui.community.AtyPost;
+import space.weme.remix.ui.community.PostDetailActivity;
 import space.weme.remix.ui.intro.AtyEditInfo;
 import space.weme.remix.util.BitmapUtils;
 import space.weme.remix.util.DimensionUtils;
@@ -71,50 +72,38 @@ import space.weme.remix.widgt.WDialog;
  * liujilong.me@gmail.com
  */
 public class AtyInfo extends BaseActivity {
-    private static final String TAG = "AtyInfo";
     public static final String ID_INTENT = "id";
+    private static final String TAG = "AtyInfo";
     private static final int REQUEST_IMAGE = 0xef;
     private static final int REQUEST_AVATAR = 0xff;
-
+    final int GRID_COUNT = 3;
+    boolean isMe = false;
+    LinearLayout mWholeLayout;
+    SimpleDraweeView mDrawBackground;
+    int birthFlag;
+    int followFlag;
+    boolean isLoading_2 = false;
+    boolean canLoadMore_2 = true;
+    int page_2;
+    boolean isLoading_3 = false;
+    int page_3_previous_id;
+    List<TimeLine> timeLineList;
+    TimeLineAdapter mTimeLineAdapter;
+    List<UserImage> userImageList;
+    UserImageAdapter mUserImageAdapter;
+    WindowListener mWindowListener;
+    UserImageListener mUserImageListener;
     private String mId;
     private UserService.GetProfileByUserIdResp mUser;
-    boolean isMe = false;
-
     private TextView mLikeCount;
-
     private TextView mTvVisit;
     private TextView mTvConstellation;
     private ImageView mIvGender;
     private View[] mPagerViews;
     private ViewPager mViewPager;
     private SimpleDraweeView mDrawAvatar;
-    LinearLayout mWholeLayout;
-    SimpleDraweeView mDrawBackground;
-
     private SwipeRefreshLayout swipe_2;
     private SwipeRefreshLayout swipe_3;
-
-    int birthFlag;
-    int followFlag;
-
-
-    boolean isLoading_2 = false;
-    boolean canLoadMore_2 = true;
-    int page_2;
-
-    boolean isLoading_3 = false;
-    int page_3_previous_id;
-    final int GRID_COUNT = 3;
-
-    List<TimeLine> timeLineList;
-    TimeLineAdapter mTimeLineAdapter;
-
-    List<UserImage> userImageList;
-    UserImageAdapter mUserImageAdapter;
-
-    WindowListener mWindowListener;
-    UserImageListener mUserImageListener;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -466,6 +455,7 @@ public class AtyInfo extends BaseActivity {
         mTimeLineAdapter = new TimeLineAdapter();
         recyclerView.setLayoutManager(new LinearLayoutManager(AtyInfo.this));
         recyclerView.setHasFixedSize(true);
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setAdapter(mTimeLineAdapter);
         timeLineList = new ArrayList<>();
         mTimeLineAdapter.setTimeLineList(timeLineList);
@@ -546,6 +536,7 @@ public class AtyInfo extends BaseActivity {
         mUserImageAdapter = new UserImageAdapter();
         userImageList = new ArrayList<>();
         mUserImageAdapter.setUserImageList(userImageList);
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setAdapter(mUserImageAdapter);
         swipe_3.setColorSchemeResources(R.color.colorPrimary);
         swipe_3.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
@@ -702,6 +693,97 @@ public class AtyInfo extends BaseActivity {
         return TAG;
     }
 
+    private void changeBackground() {
+        Intent intent = new Intent(AtyInfo.this, MultiImageSelectorActivity.class);
+        intent.putExtra(MultiImageSelectorActivity.EXTRA_SHOW_CAMERA, true);
+        intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_COUNT, 1);
+        intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_MODE, MultiImageSelectorActivity.MODE_SINGLE);
+        startActivityForResult(intent, REQUEST_IMAGE);
+    }
+
+    private void sendMessage() {
+        Intent i = new Intent(AtyInfo.this, AtyMessageReply.class);
+        i.putExtra(AtyMessageReply.INTENT_ID, mId + "");
+        startActivity(i);
+    }
+
+    private void editMyInfo() {
+        LogUtils.i(TAG, "edit my info");
+        Intent i = new Intent(AtyInfo.this, AtyEditInfo.class);
+        i.putExtra(AtyEditInfo.INTENT_EDIT, true);
+        if (mUser != null) {
+            i.putExtra(AtyEditInfo.INTENT_INFO, (new Gson()).toJson(mUser));
+        }
+        startActivity(i);
+    }
+
+    private void audioRecord() {
+        LogUtils.i(TAG, "audio record");
+        Intent i = new Intent(AtyInfo.this, AtyAudioRecord.class);
+        startActivity(i);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode != RESULT_OK) {
+            return;
+        }
+        if (requestCode == REQUEST_IMAGE) {
+            List<String> paths = data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
+            String mAvatarPath = paths.get(0);
+            int width = mDrawBackground.getWidth();
+            int height = mDrawBackground.getHeight();
+            BitmapUtils.showResizedPicture(mDrawBackground, Uri.parse("file://" + mAvatarPath), width, height);
+            ArrayMap<String, String> map = new ArrayMap<>();
+            map.put("token", StrUtils.token());
+            map.put("type", "-1");
+            map.put("number", "1");
+            OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, map, mAvatarPath, StrUtils.MEDIA_TYPE_IMG, TAG, new OkHttpUtils.SimpleOkCallBack() {
+                @Override
+                public void onResponse(String s) {
+                    LogUtils.d(TAG, s);
+                    JSONObject j = OkHttpUtils.parseJSON(AtyInfo.this, s);
+                    if (j == null) {
+                        return;
+                    }
+                    ImagePipeline imagePipeline = Fresco.getImagePipeline();
+                    imagePipeline.evictFromCache(Uri.parse(StrUtils.backgroundForID(mId)));
+                }
+            });
+        } else if (requestCode == REQUEST_AVATAR) {
+            final LoadingPrompt prompt = new LoadingPrompt(AtyInfo.this);
+            List<String> path = data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
+            if (path != null && !path.isEmpty()) {
+                Map<String, String> map = new ArrayMap<>();
+                map.put("token", StrUtils.token());
+                map.put("type", "-16");
+                final int total = path.size();
+                final int[] cur = {0};
+                prompt.show(getWindow().getDecorView(), "正在上传图片");
+                for (int i = 0; i < path.size(); i++) {
+                    OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, map, path.get(i), StrUtils.MEDIA_TYPE_IMG, TAG, new OkHttpUtils.SimpleOkCallBack() {
+                        @Override
+                        public void onResponse(String s) {
+                            JSONObject j = OkHttpUtils.parseJSON(AtyInfo.this, s);
+                            if (j != null) {
+                                cur[0]++;
+                                if (cur[0] == total) {
+                                    prompt.dismiss();
+                                    configView3();
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(IOException e) {
+                            super.onFailure(e);
+                        }
+                    });
+                }
+            }
+        }
+    }
+
     private class InfoAdapter extends PagerAdapter {
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
@@ -758,9 +840,9 @@ public class AtyInfo extends BaseActivity {
             vh.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Intent i = new Intent(AtyInfo.this, AtyPost.class);
-                    i.putExtra(AtyPost.POST_INTENT, timeLine.postId);
-                    i.putExtra(AtyPost.THEME_INTENT, timeLine.topic);
+                    Intent i = new Intent(AtyInfo.this, PostDetailActivity.class);
+                    i.putExtra(PostDetailActivity.POST_INTENT, timeLine.postId);
+                    i.putExtra(PostDetailActivity.THEME_INTENT, timeLine.topic);
                     startActivity(i);
                 }
             });
@@ -898,37 +980,6 @@ public class AtyInfo extends BaseActivity {
         }
     }
 
-    private void changeBackground() {
-        Intent intent = new Intent(AtyInfo.this, MultiImageSelectorActivity.class);
-        intent.putExtra(MultiImageSelectorActivity.EXTRA_SHOW_CAMERA, true);
-        intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_COUNT, 1);
-        intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_MODE, MultiImageSelectorActivity.MODE_SINGLE);
-        startActivityForResult(intent, REQUEST_IMAGE);
-    }
-
-    private void sendMessage() {
-        Intent i = new Intent(AtyInfo.this, AtyMessageReply.class);
-        i.putExtra(AtyMessageReply.INTENT_ID, mId + "");
-        startActivity(i);
-    }
-
-
-    private void editMyInfo() {
-        LogUtils.i(TAG, "edit my info");
-        Intent i = new Intent(AtyInfo.this, AtyEditInfo.class);
-        i.putExtra(AtyEditInfo.INTENT_EDIT, true);
-        if (mUser != null) {
-            i.putExtra(AtyEditInfo.INTENT_INFO, (new Gson()).toJson(mUser));
-        }
-        startActivity(i);
-    }
-
-    private void audioRecord() {
-        LogUtils.i(TAG, "audio record");
-        Intent i = new Intent(AtyInfo.this, AtyAudioRecord.class);
-        startActivity(i);
-    }
-
     private class UserImageListener implements View.OnClickListener {
 
         @Override
@@ -942,67 +993,6 @@ public class AtyInfo extends BaseActivity {
             i.putExtra(AtyImagePager.INTENT_CONTENT, array.toString());
             i.putExtra(AtyImagePager.INTENT_INDEX, index);
             startActivity(i);
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (resultCode != RESULT_OK) {
-            return;
-        }
-        if (requestCode == REQUEST_IMAGE) {
-            List<String> paths = data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
-            String mAvatarPath = paths.get(0);
-            int width = mDrawBackground.getWidth();
-            int height = mDrawBackground.getHeight();
-            BitmapUtils.showResizedPicture(mDrawBackground, Uri.parse("file://" + mAvatarPath), width, height);
-            ArrayMap<String, String> map = new ArrayMap<>();
-            map.put("token", StrUtils.token());
-            map.put("type", "-1");
-            map.put("number", "1");
-            OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, map, mAvatarPath, StrUtils.MEDIA_TYPE_IMG, TAG, new OkHttpUtils.SimpleOkCallBack() {
-                @Override
-                public void onResponse(String s) {
-                    LogUtils.d(TAG, s);
-                    JSONObject j = OkHttpUtils.parseJSON(AtyInfo.this, s);
-                    if (j == null) {
-                        return;
-                    }
-                    ImagePipeline imagePipeline = Fresco.getImagePipeline();
-                    imagePipeline.evictFromCache(Uri.parse(StrUtils.backgroundForID(mId)));
-                }
-            });
-        } else if (requestCode == REQUEST_AVATAR) {
-            final LoadingPrompt prompt = new LoadingPrompt(AtyInfo.this);
-            List<String> path = data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
-            if (path != null && !path.isEmpty()) {
-                Map<String, String> map = new ArrayMap<>();
-                map.put("token", StrUtils.token());
-                map.put("type", "-16");
-                final int total = path.size();
-                final int[] cur = {0};
-                prompt.show(getWindow().getDecorView(), "正在上传图片");
-                for (int i = 0; i < path.size(); i++) {
-                    OkHttpUtils.uploadFile(StrUtils.UPLOAD_AVATAR_URL, map, path.get(i), StrUtils.MEDIA_TYPE_IMG, TAG, new OkHttpUtils.SimpleOkCallBack() {
-                        @Override
-                        public void onResponse(String s) {
-                            JSONObject j = OkHttpUtils.parseJSON(AtyInfo.this, s);
-                            if (j != null) {
-                                cur[0]++;
-                                if (cur[0] == total) {
-                                    prompt.dismiss();
-                                    configView3();
-                                }
-                            }
-                        }
-
-                        @Override
-                        public void onFailure(IOException e) {
-                            super.onFailure(e);
-                        }
-                    });
-                }
-            }
         }
     }
 

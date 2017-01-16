@@ -1,4 +1,4 @@
-package space.weme.remix.ui.aty;
+package space.weme.remix.ui.activity;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -35,9 +35,10 @@ import space.weme.remix.util.StrUtils;
 import space.weme.remix.widgt.WDialog;
 import space.weme.remix.widgt.WSwitch;
 
-public class AtyPublicActivity extends SwipeActivity {
+public class PublishActivityActivity extends SwipeActivity {
 
-    private static final String TAG = "AtyPublicActivity";
+    private static final String TAG = PublishActivityActivity.class.getSimpleName();
+
     private static final int REQUEST_IMAGE = 2;
 
     @BindView(R.id.img_act_add)
@@ -75,11 +76,10 @@ public class AtyPublicActivity extends SwipeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.aty_public_activity);
+        setContentView(R.layout.activity_public_activity);
         ButterKnife.bind(this);
         wSwitch.setOn(false);
     }
-
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -113,7 +113,7 @@ public class AtyPublicActivity extends SwipeActivity {
 
     @OnClick(R.id.img_act_add)
     public void onAddImageClick() {
-        Intent intent = new Intent(AtyPublicActivity.this, MultiImageSelectorActivity.class);
+        Intent intent = new Intent(PublishActivityActivity.this, MultiImageSelectorActivity.class);
         // 是否显示拍摄图片
         intent.putExtra(MultiImageSelectorActivity.EXTRA_SHOW_CAMERA, true);
         // 最大可选择图片数量(多图情况下)
@@ -127,10 +127,10 @@ public class AtyPublicActivity extends SwipeActivity {
     @OnClick(R.id.txt_activity_public)
     public void onPublishClick() {
         if (path != null && !path.isEmpty()) {
-            new WDialog.Builder(AtyPublicActivity.this).setMessage("确定发布活动吗？")
+            new WDialog.Builder(PublishActivityActivity.this).setMessage("确定发布活动吗？")
                     .setPositive("发布", v -> publishActivity()).show();
         } else {
-            new WDialog.Builder(AtyPublicActivity.this).setMessage("请填写必填信息").show();
+            new WDialog.Builder(PublishActivityActivity.this).setMessage("请填写必填信息").show();
         }
     }
 
@@ -153,7 +153,7 @@ public class AtyPublicActivity extends SwipeActivity {
                 .subscribe(resp -> {
                     Log.d(TAG, "publishActivity: " + resp.toString());
                     if ("successful".equals(resp.getState())) {
-                        new WDialog.Builder(AtyPublicActivity.this)
+                        new WDialog.Builder(PublishActivityActivity.this)
                                 .setTitle("提示")
                                 .setMessage("活动发布成功，请等待审核")
                                 .show();
@@ -183,7 +183,7 @@ public class AtyPublicActivity extends SwipeActivity {
                         }
 
                     } else {
-                        new WDialog.Builder(AtyPublicActivity.this)
+                        new WDialog.Builder(PublishActivityActivity.this)
                                 .setTitle("提示")
                                 .setMessage("活动发布失败")
                                 .setPositive("确认", v -> onBackPressed())

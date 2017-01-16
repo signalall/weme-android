@@ -4,17 +4,17 @@
     android:layout_height="match_parent">
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar_search_activity"
-        android:background="@color/colorPrimary"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize">
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/colorPrimary">
         <TextView
             android:id="@+id/main_title"
-            android:textSize="20sp"
-            android:textColor="@color/white"
-            android:layout_gravity="center"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="活动搜索结果"/>
+            android:layout_gravity="center"
+            android:text="活动搜索结果"
+            android:textColor="@color/white"
+            android:textSize="20sp" />
     </android.support.v7.widget.Toolbar>
 
     <RelativeLayout
@@ -67,10 +67,10 @@
 
     </RelativeLayout>
     <android.support.v7.widget.RecyclerView
-        android:background="#f0eff5"
         android:id="@+id/aty_search_activity"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/layout_search_top"/>
+        android:layout_below="@id/layout_search_top"
+        android:background="#f0eff5" />
 
 </RelativeLayout>

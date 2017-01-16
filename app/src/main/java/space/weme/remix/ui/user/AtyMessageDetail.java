@@ -3,6 +3,7 @@ package space.weme.remix.ui.user;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.util.ArrayMap;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -28,18 +29,15 @@ import space.weme.remix.util.StrUtils;
  * liujilong.me@gmail.com
  */
 public class AtyMessageDetail extends SwipeActivity {
-    private static final String TAG = "AtyMessageDetail";
     public static final String INTENT_ID = "intent_id";
+    private static final String TAG = "AtyMessageDetail";
     public static int REQUEST_CODE = 0xfe;
-
-    private String id;
-    private MessageDetailAdapter adapter;
-
-    private List<Message> messageList;
-
     boolean isLoading = false;
     boolean canLoadMore = true;
     int curPage = 1;
+    private String id;
+    private MessageDetailAdapter adapter;
+    private List<Message> messageList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +51,7 @@ public class AtyMessageDetail extends SwipeActivity {
         id = getIntent().getStringExtra(INTENT_ID);
         RecyclerView mRecycler = (RecyclerView) findViewById(R.id.aty_message_detail_recycler);
         mRecycler.setHasFixedSize(true);
+        mRecycler.setItemAnimator(new DefaultItemAnimator());
         mRecycler.setLayoutManager(new LinearLayoutManager(this));
         messageList = new ArrayList<>();
         adapter = new MessageDetailAdapter(this, id);
@@ -79,48 +78,48 @@ public class AtyMessageDetail extends SwipeActivity {
         getMessageDetail(1);
     }
 
-    private void setHasRead(String messageId){
-        ArrayMap<String,String> param = new ArrayMap<>();
-        param.put("id",messageId);
+    private void setHasRead(String messageId) {
+        ArrayMap<String, String> param = new ArrayMap<>();
+        param.put("id", messageId);
         param.put("token", StrUtils.token());
-        OkHttpUtils.post(StrUtils.READ_MESSAGE,param,TAG,new OkHttpUtils.SimpleOkCallBack(){
+        OkHttpUtils.post(StrUtils.READ_MESSAGE, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
             @Override
             public void onResponse(String s) {
-                LogUtils.d(TAG,s);
+                LogUtils.d(TAG, s);
             }
         });
     }
 
-    private void getMessageDetail(final int page){
-        ArrayMap<String,String> param = new ArrayMap<>();
+    private void getMessageDetail(final int page) {
+        ArrayMap<String, String> param = new ArrayMap<>();
         param.put("token", StrUtils.token());
-        param.put("page",String.format("%d", page));
-        param.put("SendId",id);
+        param.put("page", String.format("%d", page));
+        param.put("SendId", id);
         isLoading = true;
-        OkHttpUtils.post(StrUtils.GET_MESSAGE_DETAIL,param,TAG, new OkHttpUtils.SimpleOkCallBack(){
+        OkHttpUtils.post(StrUtils.GET_MESSAGE_DETAIL, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
             @Override
             public void onResponse(String s) {
-                LogUtils.i(TAG,s);
+                LogUtils.i(TAG, s);
                 isLoading = false;
                 JSONObject j = OkHttpUtils.parseJSON(AtyMessageDetail.this, s);
-                if(j == null){
+                if (j == null) {
                     return;
                 }
                 JSONArray result = j.optJSONArray("result");
-                if(result == null){
+                if (result == null) {
                     return;
                 }
                 curPage = page;
                 int previousCount = messageList.size();
                 int count = result.length();
-                if(count == 0){
+                if (count == 0) {
                     canLoadMore = false;
                     return;
                 }
-                for(int i = 0; i<result.length(); i++){
+                for (int i = 0; i < result.length(); i++) {
                     Message m = Message.fromJSON(result.optJSONObject(i));
                     messageList.add(m);
-                    setHasRead(m.messageid+"");
+                    setHasRead(m.messageid + "");
                 }
                 adapter.notifyItemRangeInserted(previousCount, count);
             }
@@ -134,7 +133,7 @@ public class AtyMessageDetail extends SwipeActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if(requestCode == REQUEST_CODE && resultCode == RESULT_OK){
+        if (requestCode == REQUEST_CODE && resultCode == RESULT_OK) {
             getMessageDetail(1);
         }
     }

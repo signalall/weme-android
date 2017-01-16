@@ -2,18 +2,19 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/white"
     android:orientation="vertical">
     <android.support.v7.widget.Toolbar
-        android:background="@color/colorPrimary"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize">
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/colorPrimary">
         <TextView
             android:id="@+id/main_title"
-            android:textSize="18sp"
-            android:textColor="@color/white"
-            android:layout_gravity="center"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textColor="@color/white"
+            android:textSize="18sp" />
     </android.support.v7.widget.Toolbar>
 
     <ScrollView
@@ -32,17 +33,17 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
                 <TextView
+                    android:id="@+id/slogan"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal|bottom"
+                    android:layout_marginBottom="16dp"
                 android:shadowColor="@color/shadow_white"
                 android:shadowDx="5"
                 android:shadowDy="5"
                 android:shadowRadius="5"
-                android:textSize="16sp"
                 android:textColor="@color/white"
-                android:layout_marginBottom="16dp"
-                android:layout_gravity="center_horizontal|bottom"
-                android:id="@+id/slogan"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+                    android:textSize="16sp" />
             </FrameLayout>
 
             <TextView
@@ -54,7 +55,7 @@
                 android:paddingStart="8dp"
                 android:text="主办方"
                 android:textColor="#515171"
-                android:textSize="10sp" />
+                android:textSize="12sp" />
 
             <RelativeLayout
                 android:layout_width="match_parent"
@@ -86,9 +87,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/txt_public_author"
-                    android:layout_marginTop="4dp"
                     android:layout_marginLeft="4dp"
                     android:layout_marginStart="4dp"
+                    android:layout_marginTop="4dp"
                     android:layout_toRightOf="@+id/sign_pic"
                     android:textColor="@color/black"
                     android:textSize="12sp" />
@@ -101,21 +102,45 @@
                 android:gravity="center_vertical"
                 android:paddingLeft="8dp"
                 android:paddingStart="8dp"
+                android:text="活动评论"
+                android:textColor="#515171"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/comment_text_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:layout_marginLeft="16dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:text="活动评论，去留言吧"
+                android:textColor="@color/black"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="24dp"
+                android:background="@color/grey_gap"
+                android:gravity="center_vertical"
+                android:paddingLeft="8dp"
+                android:paddingStart="8dp"
                 android:text="活动详情"
                 android:textColor="#515171"
-                android:textSize="10sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/sign_detail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:layout_marginTop="8dp"
-                android:gravity="center_vertical"
                 android:layout_marginLeft="16dp"
                 android:layout_marginStart="16dp"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
                 android:textColor="@color/black"
-                android:textSize="12sp" />
+                android:textSize="14sp" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -126,17 +151,17 @@
                 android:paddingStart="8dp"
                 android:text="人数"
                 android:textColor="#515171"
-                android:textSize="10sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/sign_number"
                 android:layout_width="match_parent"
                 android:layout_height="32dp"
-                android:gravity="center_vertical"
-                android:layout_marginStart="16dp"
                 android:layout_marginLeft="16dp"
+                android:layout_marginStart="16dp"
+                android:gravity="center_vertical"
                 android:textColor="@color/black"
-                android:textSize="12sp" />
+                android:textSize="14sp" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -147,17 +172,17 @@
                 android:paddingStart="8dp"
                 android:text="时间"
                 android:textColor="#515171"
-                android:textSize="10sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/sign_time"
                 android:layout_width="match_parent"
                 android:layout_height="32dp"
-                android:gravity="center_vertical"
-                android:layout_marginStart="16dp"
                 android:layout_marginLeft="16dp"
+                android:layout_marginStart="16dp"
+                android:gravity="center_vertical"
                 android:textColor="@color/black"
-                android:textSize="12sp" />
+                android:textSize="14sp" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -168,17 +193,17 @@
                 android:paddingStart="8dp"
                 android:text="地点"
                 android:textColor="#515171"
-                android:textSize="10sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/sign_location"
                 android:layout_width="match_parent"
                 android:layout_height="32dp"
-                android:gravity="center_vertical"
-                android:layout_marginStart="16dp"
                 android:layout_marginLeft="16dp"
+                android:layout_marginStart="16dp"
+                android:gravity="center_vertical"
                 android:textColor="@color/black"
-                android:textSize="12sp" />
+                android:textSize="14sp" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -189,17 +214,17 @@
                 android:paddingStart="8dp"
                 android:text="备注"
                 android:textColor="#515171"
-                android:textSize="10sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/sign_remark"
                 android:layout_width="match_parent"
                 android:layout_height="32dp"
-                android:gravity="center_vertical"
-                android:layout_marginStart="16dp"
                 android:layout_marginLeft="16dp"
+                android:layout_marginStart="16dp"
+                android:gravity="center_vertical"
                 android:textColor="@color/black"
-                android:textSize="12sp" />
+                android:textSize="14sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"

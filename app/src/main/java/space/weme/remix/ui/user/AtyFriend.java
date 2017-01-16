@@ -3,6 +3,7 @@ package space.weme.remix.ui.user;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.util.ArrayMap;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
@@ -37,14 +38,12 @@ public class AtyFriend extends SwipeActivity {
     EditText etSearch;
     FrameLayout tvSeeMe;
     RecyclerView mRecycler;
-
-    private List<FriendData> friendDataList;
-    private FriendAdapter adapter;
-    private List<FriendData> searchList;
-
     boolean isLoading = false;
     boolean canLoadMore = true;
     int curPage = 1;
+    private List<FriendData> friendDataList;
+    private FriendAdapter adapter;
+    private List<FriendData> searchList;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,7 +65,7 @@ public class AtyFriend extends SwipeActivity {
         adapter = new FriendAdapter(this);
         adapter.setList(friendDataList);
         mRecycler.setAdapter(adapter);
-
+        mRecycler.setItemAnimator(new DefaultItemAnimator());
         mRecycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
@@ -85,15 +84,18 @@ public class AtyFriend extends SwipeActivity {
         });
 
 
-
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {   }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {    }
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
             @Override
             public void afterTextChanged(Editable s) {
-                if(s.length()==0){
+                if (s.length() == 0) {
                     adapter.setList(friendDataList);
                     adapter.notifyDataSetChanged();
                     return;
@@ -106,7 +108,7 @@ public class AtyFriend extends SwipeActivity {
         tvSeeMe.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = new Intent(AtyFriend.this,AtySeeMe.class);
+                Intent i = new Intent(AtyFriend.this, AtySeeMe.class);
                 startActivity(i);
             }
         });
@@ -114,10 +116,10 @@ public class AtyFriend extends SwipeActivity {
         getFollowersAtPage(1);
     }
 
-    private void getFollowersAtPage(final int page){
+    private void getFollowersAtPage(final int page) {
         ArrayMap<String, String> param = new ArrayMap<>();
         param.put("token", StrUtils.token());
-        param.put("page",String.format("%d", page));
+        param.put("page", String.valueOf(page));
         param.put("direction", "followeds");
         isLoading = true;
         OkHttpUtils.post(StrUtils.GET_FOLLOWERS_URL, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
@@ -133,7 +135,7 @@ public class AtyFriend extends SwipeActivity {
                 JSONArray result = j.optJSONArray("result");
                 int previousCount = friendDataList.size();
                 int count = result.length();
-                if(count == 0){
+                if (count == 0) {
                     canLoadMore = false;
                     return;
                 }
@@ -145,16 +147,16 @@ public class AtyFriend extends SwipeActivity {
         });
     }
 
-    private void search(String s){
-        ArrayMap<String,String> param = new ArrayMap<>();
-        param.put("token",StrUtils.token());
-        param.put("text",s);
-        OkHttpUtils.post(StrUtils.SEARCH_USER_URL,param,TAG, new OkHttpUtils.SimpleOkCallBack(){
+    private void search(String s) {
+        ArrayMap<String, String> param = new ArrayMap<>();
+        param.put("token", StrUtils.token());
+        param.put("text", s);
+        OkHttpUtils.post(StrUtils.SEARCH_USER_URL, param, TAG, new OkHttpUtils.SimpleOkCallBack() {
             @Override
             public void onResponse(String s) {
-                LogUtils.i(TAG,s);
-                JSONObject j = OkHttpUtils.parseJSON(AtyFriend.this,s);
-                if(j == null){
+                LogUtils.i(TAG, s);
+                JSONObject j = OkHttpUtils.parseJSON(AtyFriend.this, s);
+                if (j == null) {
                     return;
                 }
                 searchList.clear();

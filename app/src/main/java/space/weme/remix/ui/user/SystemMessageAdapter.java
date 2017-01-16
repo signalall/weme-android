@@ -13,7 +13,7 @@ import java.util.List;
 
 import space.weme.remix.R;
 import space.weme.remix.model.SystemMessage;
-import space.weme.remix.ui.community.AtyPost;
+import space.weme.remix.ui.community.PostDetailActivity;
 import space.weme.remix.util.LogUtils;
 import space.weme.remix.util.OkHttpUtils;
 import space.weme.remix.util.StrUtils;
@@ -46,8 +46,8 @@ public class SystemMessageAdapter extends RecyclerView.Adapter<RecyclerView.View
             @Override
             public void onClick(View v) {
                 String sendId = (String) v.getTag(R.id.tag_first);
-                Intent i = new Intent(mContext, AtyPost.class);
-                i.putExtra(AtyPost.POST_INTENT, sendId);
+                Intent i = new Intent(mContext, PostDetailActivity.class);
+                i.putExtra(PostDetailActivity.POST_INTENT, sendId);
                 mContext.startActivity(i);
 
                 // send read info to server

@@ -30,7 +30,7 @@ import space.weme.remix.model.Activity;
 import space.weme.remix.model.ResponseWrapper;
 import space.weme.remix.service.ActivityService;
 import space.weme.remix.service.Services;
-import space.weme.remix.ui.aty.AtyActivityDetail;
+import space.weme.remix.ui.activity.ActivityDetailActivity;
 import space.weme.remix.ui.base.BaseFragment;
 import space.weme.remix.util.StrUtils;
 
@@ -40,15 +40,22 @@ import space.weme.remix.util.StrUtils;
  */
 public class FgtUserActivity extends BaseFragment {
     private static final String TAG = "FgtUserActivity";
-
-    private int pagerPage;
-    private List<Activity> activityList;
     ActivityAdapter adapter;
-
     boolean isRefreshing = false;
     boolean isLoading = false;
     boolean canLoadMore = true;
     int curPage = 1;
+    View.OnClickListener listener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            Activity activity = (Activity) v.getTag();
+            Intent i = new Intent(getActivity(), ActivityDetailActivity.class);
+            i.putExtra(ActivityDetailActivity.INTENT, activity.getId());
+            getActivity().startActivity(i);
+        }
+    };
+    private int pagerPage;
+    private List<Activity> activityList;
 
     public static FgtUserActivity newInstance(int page) {
         FgtUserActivity f = new FgtUserActivity();
@@ -158,7 +165,6 @@ public class FgtUserActivity extends BaseFragment {
                 });
     }
 
-
     @Override
     protected String tag() {
         return TAG;
@@ -229,15 +235,5 @@ public class FgtUserActivity extends BaseFragment {
             }
         }
     }
-
-    View.OnClickListener listener = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            Activity activity = (Activity) v.getTag();
-            Intent i = new Intent(getActivity(), AtyActivityDetail.class);
-            i.putExtra(AtyActivityDetail.INTENT, activity.getId());
-            getActivity().startActivity(i);
-        }
-    };
 
 }
