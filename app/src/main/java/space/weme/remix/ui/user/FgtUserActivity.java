@@ -185,7 +185,7 @@ public class FgtUserActivity extends BaseFragment {
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(mContext).inflate(R.layout.fgt_user_activity_cell, parent, false);
+            View v = LayoutInflater.from(mContext).inflate(R.layout.list_item_user_activity_item, parent, false);
             return new VH(v);
         }
 

@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -78,7 +77,7 @@ public class PostListActivity extends SwipeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.aty_topic);
+        setContentView(R.layout.activity_post_list);
         ButterKnife.bind(this);
         mTopicId = getIntent().getStringExtra(TOPIC_ID);
 
@@ -317,10 +316,10 @@ public class PostListActivity extends SwipeActivity {
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             RecyclerView.ViewHolder holder = null;
             if (viewType == TYPE_ITEM) {
-                View v = LayoutInflater.from(mContext).inflate(R.layout.aty_topic_item, parent, false);
+                View v = LayoutInflater.from(mContext).inflate(R.layout.list_item_post_item, parent, false);
                 holder = new ItemViewHolder(v);
             } else if (viewType == TYPE_PROGRESS) {
-                View v = LayoutInflater.from(mContext).inflate(R.layout.aty_topic_progress, parent, false);
+                View v = LayoutInflater.from(mContext).inflate(R.layout.list_item_post_progress, parent, false);
                 holder = new ProgressViewHolder(v);
             }
             return holder;

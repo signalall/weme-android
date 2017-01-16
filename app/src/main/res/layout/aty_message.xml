@@ -1,20 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
     <android.support.v7.widget.Toolbar
-        android:background="@color/colorPrimary"
         android:layout_width="match_parent"
-        android:layout_height="56dp">
+        android:layout_height="56dp"
+        android:background="@color/colorPrimary">
+
         <TextView
-            android:textSize="16sp"
-            android:text="@string/message"
-            android:gravity="center"
-            android:textColor="@color/white"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="@string/message"
+            android:textColor="@color/white"
+            android:textSize="16sp" />
     </android.support.v7.widget.Toolbar>
 
     <android.support.design.widget.TabLayout
@@ -24,12 +26,13 @@
         android:background="@color/white"
         app:tabIndicatorColor="@color/blue_100"
         app:tabSelectedTextColor="@color/colorPrimary"
-        app:tabTextColor="@color/colorGray"/>
+        app:tabTextColor="@color/colorGray" />
+
     <android.support.v4.view.ViewPager
-        android:background="@color/grey_gap"
         android:id="@+id/aty_user_message_pager"
-        android:layout_weight="1"
         android:layout_width="match_parent"
-        android:layout_height="0dp"/>
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@color/grey_gap" />
 
 </LinearLayout>

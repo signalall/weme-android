@@ -1,98 +1,98 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:background="@drawable/bg_aty_message_cell"
-    android:layout_marginLeft="8dp"
-    android:layout_marginStart="8dp"
-    android:layout_marginRight="8dp"
-    android:layout_marginEnd="8dp"
-    android:layout_marginTop="4dp"
-    android:layout_marginBottom="4dp"
     android:layout_width="match_parent"
-    android:layout_height="72dp">
+    android:layout_height="72dp"
+    android:layout_marginBottom="2dp"
+    android:layout_marginEnd="4dp"
+    android:layout_marginLeft="4dp"
+    android:layout_marginRight="4dp"
+    android:layout_marginStart="4dp"
+    android:layout_marginTop="2dp"
+    android:background="@drawable/bg_aty_message_cell">
     <com.facebook.drawee.view.SimpleDraweeView
         android:id="@+id/aty_message_cell_avatar"
-        app:placeholderImage="@mipmap/default_avatar"
-        app:roundAsCircle="true"
-        android:layout_margin="8dp"
         android:layout_width="56dp"
-        android:layout_height="56dp" />
+        android:layout_height="56dp"
+        android:layout_margin="8dp"
+        app:placeholderImage="@mipmap/default_avatar"
+        app:roundAsCircle="true" />
     <TextView
+        android:id="@+id/aty_message_cell_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/aty_message_cell_avatar"
         android:layout_marginLeft="8dp"
         android:layout_marginStart="8dp"
-        android:id="@+id/aty_message_cell_name"
-        android:textSize="14sp"
-        android:textColor="@color/colorPrimary"
-        android:layout_alignTop="@+id/aty_message_cell_avatar"
-        android:layout_toRightOf="@+id/aty_message_cell_avatar"
         android:layout_toEndOf="@+id/aty_message_cell_avatar"
-        android:layout_width="wrap_content"
+        android:layout_toRightOf="@+id/aty_message_cell_avatar"
         android:gravity="center_vertical"
-        android:layout_height="wrap_content" />
+        android:textColor="@color/colorPrimary"
+        android:textSize="14sp" />
 
     <ImageView
         android:id="@+id/aty_message_cell_gender"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_alignTop="@+id/aty_message_cell_avatar"
         android:layout_marginLeft="4dp"
         android:layout_marginStart="4dp"
-        android:layout_alignTop="@+id/aty_message_cell_avatar"
-        android:layout_toRightOf="@+id/aty_message_cell_name"
+        android:layout_marginTop="2dp"
         android:layout_toEndOf="@+id/aty_message_cell_name"
-        android:src="@mipmap/boy"
-        android:layout_marginTop="2dp"
-        android:layout_width="16dp"
-        android:layout_height="16dp" />
+        android:layout_toRightOf="@+id/aty_message_cell_name"
+        android:src="@mipmap/boy" />
     <TextView
-        android:layout_marginTop="2dp"
         android:id="@+id/aty_message_cell_school"
-        android:textSize="12sp"
-        android:layout_below="@+id/aty_message_cell_name"
+        android:layout_width="wrap_content"
+        android:layout_height="20dp"
         android:layout_alignLeft="@id/aty_message_cell_name"
         android:layout_alignStart="@id/aty_message_cell_name"
-        android:layout_width="wrap_content"
-        android:layout_height="20dp" />
+        android:layout_below="@+id/aty_message_cell_name"
+        android:layout_marginTop="2dp"
+        android:textSize="12sp" />
     <ImageView
         android:id="@+id/aty_message_cell_image"
-        android:layout_marginTop="2dp"
-        android:layout_below="@+id/aty_message_cell_school"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
         android:layout_alignLeft="@id/aty_message_cell_name"
         android:layout_alignStart="@id/aty_message_cell_name"
-        android:src="@mipmap/message"
-        android:layout_width="16dp"
-        android:layout_height="16dp" />
+        android:layout_below="@+id/aty_message_cell_school"
+        android:layout_marginTop="2dp"
+        android:src="@mipmap/message" />
     <TextView
-        android:gravity="center"
         android:id="@+id/aty_message_cell_info"
-        android:layout_marginLeft="4dp"
-        android:textSize="12sp"
-        android:layout_marginStart="4dp"
-
-        android:layout_alignTop="@+id/aty_message_cell_image"
-        android:layout_toRightOf="@+id/aty_message_cell_image"
-        android:layout_toEndOf="@+id/aty_message_cell_image"
         android:layout_width="wrap_content"
-        android:layout_height="16dp" />
+        android:layout_height="16dp"
+        android:layout_alignTop="@+id/aty_message_cell_image"
+        android:layout_marginLeft="4dp"
+
+        android:layout_marginStart="4dp"
+        android:layout_toEndOf="@+id/aty_message_cell_image"
+        android:layout_toRightOf="@+id/aty_message_cell_image"
+        android:gravity="center"
+        android:textSize="12sp" />
     <TextView
-        android:textSize="12sp"
         android:id="@+id/aty_message_cell_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
-        android:layout_alignTop="@+id/aty_message_cell_avatar"
         android:layout_alignParentRight="true"
+        android:layout_alignTop="@+id/aty_message_cell_avatar"
         android:layout_marginEnd="8dp"
         android:layout_marginRight="8dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:textSize="12sp" />
 
     <TextView
         android:id="@+id/aty_message_cell_count"
-        android:background="@drawable/bg_fgt_me_message_unread"
-        android:textColor="@color/white"
-        android:textSize="12sp"
-        android:gravity="center"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_alignBottom="@+id/aty_message_cell_avatar"
         android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
         android:layout_marginEnd="8dp"
         android:layout_marginRight="8dp"
-        android:layout_alignBottom="@+id/aty_message_cell_avatar"
-        android:layout_width="24dp"
-        android:layout_height="24dp" />
+        android:background="@drawable/bg_fgt_me_message_unread"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:textSize="12sp" />
 </RelativeLayout>

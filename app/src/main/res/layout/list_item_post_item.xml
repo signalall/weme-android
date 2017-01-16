@@ -24,10 +24,10 @@
             android:id="@+id/aty_topic_item_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textStyle="bold"
             android:layout_toEndOf="@+id/aty_topic_item_avatar"
             android:layout_toRightOf="@+id/aty_topic_item_avatar"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/aty_topic_item_university"

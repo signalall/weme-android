@@ -123,7 +123,6 @@ public class AtyInfo extends BaseActivity {
         mViewPager = (ViewPager) findViewById(R.id.aty_info_pager);
         mViewPager.setAdapter(new InfoAdapter());
         mTabLayout.setupWithViewPager(mViewPager);
-        mTabLayout.setSelectedTabIndicatorHeight(0);
 
         mDrawAvatar.setOnClickListener(new View.OnClickListener() {
             @Override
